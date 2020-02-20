@@ -5,9 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Home_automation"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="304" Width="402">
     <Grid>
-        <Button Content="Connect" HorizontalAlignment="Left" Margin="23,49,0,0" VerticalAlignment="Top" Width="76"/>
+        <Button x:Name="ConnectToArduinoServerBtn" Content="Connect" HorizontalAlignment="Left" Margin="16,10,0,0" VerticalAlignment="Top" Width="76" Click="ConnectToArduinoServerBtn_Click"/>
+        <Button x:Name="ArduinoLedOnBtn" Content="LED ON" HorizontalAlignment="Left" Margin="16,35,0,0" VerticalAlignment="Top" Width="76"/>
+        <Button x:Name="ArduinoLedOffBtn" Content="LED OF" HorizontalAlignment="Left" Margin="16,60,0,0" VerticalAlignment="Top" Width="76"/>
+        <Label x:Name="ArduinoSendDataLbl" Content="Label" HorizontalAlignment="Left" Margin="16,95,0,0" VerticalAlignment="Top" Height="27" Width="346"/>
+        <Label x:Name="ArduinoRecDataLbl" Content="Label" HorizontalAlignment="Left" Margin="16,122,0,0" VerticalAlignment="Top" Height="27" Width="346"/>
 
     </Grid>
 </Window>

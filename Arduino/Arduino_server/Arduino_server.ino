@@ -11,6 +11,7 @@ const int port = 23;
 EthernetServer server(port);
 // For storing command from client
 String commandStr;
+String readString;
 
 void setup() {
     // Set digital pin 2 (PD2) as output for LED
@@ -29,10 +30,11 @@ void setup() {
  
 void loop() {
     EthernetClient client = server.available();
+
     if (client.available()) {
         // Read char until linefeed
         char c = client.read(); 
-        if (c != '\n') {
+        if (c != '0') {
             // Add received char to string variable 
             commandStr += c;
         } else {
@@ -48,18 +50,13 @@ void loop() {
     }
 }
 void processCommand(String cmd) {
-    if (cmd == "led=1") {
+    if (cmd == "on") {
         // Turn on LED
         bitSet(PORTD, 2);
-    } else if (cmd == "led=0") {
+        server.println(cmd);
+    } else if (cmd == "off") {
         // Turn off LED
         bitClear(PORTD, 2);
-    } else if (cmd == "led=?") {
-        // Read LED status then send it to client
-        if (bitRead(PORTD, 2)) {
-            server.println("led=1");
-        } else {
-            server.println("led=0");
-        }
-    } 
+        server.println(cmd);
+    }
 }
