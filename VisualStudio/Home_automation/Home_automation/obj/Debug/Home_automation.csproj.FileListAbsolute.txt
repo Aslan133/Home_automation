@@ -1,0 +1,14 @@
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\Home_automation.exe.config
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\Home_automation.exe
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\Home_automation.pdb
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.csprojAssemblyReference.cache
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\MainWindow.g.cs
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\App.g.cs
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation_MarkupCompile.cache
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation_MarkupCompile.lref
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\MainWindow.baml
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.g.resources
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.Properties.Resources.resources
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.csproj.GenerateResource.cache
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.exe
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.pdb
