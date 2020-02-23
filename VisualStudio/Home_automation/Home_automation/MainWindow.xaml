@@ -7,10 +7,17 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="304" Width="402">
     <Grid>
-        <Button x:Name="ConnectToArduinoServerBtn" Content="Connect" HorizontalAlignment="Left" Margin="16,10,0,0" VerticalAlignment="Top" Width="76" Click="ConnectToArduinoServerBtn_Click"/>
         <Button x:Name="ArduinoLedOnBtn" Content="LED ON" HorizontalAlignment="Left" Margin="16,35,0,0" VerticalAlignment="Top" Width="76" Click="ArduinoLedOnBtn_Click"/>
         <Button x:Name="ArduinoLedOffBtn" Content="LED OF" HorizontalAlignment="Left" Margin="16,60,0,0" VerticalAlignment="Top" Width="76" Click="ArduinoLedOffBtn_Click"/>
-        <Button x:Name="DisconnectToArduinoServerBtn" Content="Disconnect" HorizontalAlignment="Left" Margin="97,10,0,0" VerticalAlignment="Top" Width="76" Click="DisconnectToArduinoServerBtn_Click"/>
+        <Label Content="Temp:" HorizontalAlignment="Left" Margin="16,113,0,0" VerticalAlignment="Top" Width="42"/>
+        <Label Content="Hum:" HorizontalAlignment="Left" Margin="16,139,0,0" VerticalAlignment="Top" Width="42"/>
+        <Label x:Name="TempLbl" Content="Temp" HorizontalAlignment="Left" Margin="63,113,0,0" VerticalAlignment="Top" Width="79"/>
+        <Label x:Name="HumLbl" Content="Hum" HorizontalAlignment="Left" Margin="63,139,0,0" VerticalAlignment="Top" Width="79"/>
+        <Button x:Name="ArduinoDHT22" Content="DHT22+" HorizontalAlignment="Left" Margin="16,85,0,0" VerticalAlignment="Top" Width="76" Click="ArduinoDHT22_Click"/>
+        <Button x:Name="ArduinoDHT22_off" Content="DHT22-" HorizontalAlignment="Left" Margin="97,85,0,0" VerticalAlignment="Top" Width="76" Click="ArduinoDHT22_off_Click"/>
+        <Label x:Name="ConnectionStatusLbl" Content="Status" HorizontalAlignment="Left" Margin="63,9,0,0" VerticalAlignment="Top" Width="144"/>
+        <Label Content="Status:" HorizontalAlignment="Left" Margin="16,9,0,0" VerticalAlignment="Top" Width="49"/>
+        <TextBox x:Name="ServerIPTxt" HorizontalAlignment="Left" Height="23" Margin="207,9,0,0" TextWrapping="Wrap" Text="IP" VerticalAlignment="Top" Width="120"/>
 
     </Grid>
 </Window>
