@@ -14,6 +14,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
+using System.Diagnostics;
 
 namespace Home_automation
 {
@@ -22,9 +24,8 @@ namespace Home_automation
     /// </summary>
     public partial class MainWindow : Window
     {
-        const int PORT_NO = 23;
-        const string SERVER_IP = "192.168.0.10";
-        
+        private const int PORT_NO = 23;
+        private const string SERVER_IP = "192.168.0.10";
 
         public MainWindow()
         {
@@ -34,12 +35,13 @@ namespace Home_automation
             {
                 TcpClient client = new TcpClient(SERVER_IP, PORT_NO);
                 ConnectionStatusLbl.Content = "Connected";
+                client.Close();
             }
             catch (SocketException)
             {
-
                 ConnectionStatusLbl.Content = "Disconnected";
             }
+            
         }
 
         private string ArduinoDataExchange(string toSend)
@@ -48,11 +50,12 @@ namespace Home_automation
             NetworkStream nwStream;
 
             StringBuilder myCompleteMessage = new StringBuilder();
+
             try
             {
                 
                 //---create a TCPClient object at the IP and port no.---
-                client = new TcpClient(ServerIPTxt.Text, PORT_NO);
+                client = new TcpClient(SERVER_IP, PORT_NO);
                 nwStream = client.GetStream();
                 //ConnectToArduinoServerBtn.Background = new SolidColorBrush(Color.FromArgb(255, 4, 255, 88));
 
@@ -86,7 +89,6 @@ namespace Home_automation
             }
             catch (SocketException)
             {
-                //throw new SocketException();
                 ConnectionStatusLbl.Content = "Disconnected";
             }
 
@@ -112,7 +114,6 @@ namespace Home_automation
                 TempLbl.Content = receivedFromArduino.Split('&')[0] + " °C";
                 HumLbl.Content = receivedFromArduino.Split('&')[1] + " %";
             }
-            //TempLbl.Content = receivedFromArduino;
         }
 
         private void ArduinoDHT22_off_Click(object sender, RoutedEventArgs e)
