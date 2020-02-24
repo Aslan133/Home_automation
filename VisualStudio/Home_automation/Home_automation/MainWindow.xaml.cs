@@ -27,21 +27,13 @@ namespace Home_automation
         private const int PORT_NO = 23;
         private const string SERVER_IP = "192.168.0.10";
 
+        //private Thread th;
+        private bool readtemp;
+
         public MainWindow()
         {
             InitializeComponent();
 
-            try
-            {
-                TcpClient client = new TcpClient(SERVER_IP, PORT_NO);
-                ConnectionStatusLbl.Content = "Connected";
-                client.Close();
-            }
-            catch (SocketException)
-            {
-                ConnectionStatusLbl.Content = "Disconnected";
-            }
-            
         }
 
         private string ArduinoDataExchange(string toSend)
@@ -53,16 +45,17 @@ namespace Home_automation
 
             try
             {
-                
+
                 //---create a TCPClient object at the IP and port no.---
                 client = new TcpClient(SERVER_IP, PORT_NO);
+
                 nwStream = client.GetStream();
                 //ConnectToArduinoServerBtn.Background = new SolidColorBrush(Color.FromArgb(255, 4, 255, 88));
 
-                
+
                 if (nwStream.CanRead && nwStream.CanWrite)
                 {
-                    ConnectionStatusLbl.Content = "Connected";
+                    //ConnectionStatusLbl.Content = "Connected";
 
                     byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(toSend);
                     nwStream.Write(bytesToSend, 0, bytesToSend.Length);
@@ -89,7 +82,7 @@ namespace Home_automation
             }
             catch (SocketException)
             {
-                ConnectionStatusLbl.Content = "Disconnected";
+                //ConnectionStatusLbl.Content = "Disconnected";
             }
 
             return myCompleteMessage.ToString();
@@ -105,20 +98,28 @@ namespace Home_automation
             ArduinoDataExchange("off0");
         }
 
-        private void ArduinoDHT22_Click(object sender, RoutedEventArgs e)
+        private async void ArduinoDHT22_Click(object sender, RoutedEventArgs e)
         {
-            string receivedFromArduino = ArduinoDataExchange("th0");
-
-            if (receivedFromArduino != "")
+            readtemp = true;
+            while (readtemp)
             {
-                TempLbl.Content = receivedFromArduino.Split('&')[0] + " °C";
-                HumLbl.Content = receivedFromArduino.Split('&')[1] + " %";
+                string receivedFromArduino = await Task.Run(() => 
+                { 
+                    Thread.Sleep(1000); 
+                    return ArduinoDataExchange("th0"); 
+                });
+
+                if (receivedFromArduino != "" && receivedFromArduino.Contains("&"))
+                {
+                    TempLbl.Content = receivedFromArduino.Split('&')[0] + " °C";
+                    HumLbl.Content = receivedFromArduino.Split('&')[1] + " %";
+                }
             }
         }
 
         private void ArduinoDHT22_off_Click(object sender, RoutedEventArgs e)
         {
-
+            readtemp = false;
         }
 
         private void ConnectToArduinoServerBtn_Click(object sender, RoutedEventArgs e)
