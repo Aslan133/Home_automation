@@ -101,7 +101,20 @@ namespace Home_automation
         {
 
         }
+        private List<string> ActiveErrors(params Dictionary<string, Error>[] errors)
+        {
+            List<string> activeErrors = new List<string>();
 
+            foreach (var errDict in errors)
+            {
+                foreach (var err in errDict.Where(x => x.Value.IsActive == true))
+                {
+                    activeErrors.Add(err.Value.Message);
+                }
+            }
+
+            return activeErrors;
+        }
     }
     internal class Arduino
     {
@@ -109,11 +122,18 @@ namespace Home_automation
         public int ServerPort { get; }
         public bool ServerConnectionOK { get; set; }
         public bool TempHumSensorNo1OK { get; set; }
+        public Dictionary<string, Error> ArduinoErrors { get; set; }
 
         public Arduino(string ServerIP, int ServerPort)
         {
             this.ServerIP = ServerIP;
             this.ServerPort = ServerPort;
+
+            #region InitErrors
+            ArduinoErrors = new Dictionary<string, Error>();
+            ArduinoErrors.Add("ServerComErr", new Error("Communication with Arduino TCP Server error"));
+            ArduinoErrors.Add("DHT_No1Err", new Error("Temperature/Humidity sensor error"));
+            #endregion
         }
         public string ArduinoDataExchange(string toSend)
         {
@@ -165,6 +185,15 @@ namespace Home_automation
             }
 
             return myCompleteMessage.ToString();
+        }
+    }
+    internal class Error
+    {
+        public bool IsActive { get; set; }
+        public string Message { get; }
+        public Error(string Message)
+        {
+            this.Message = Message;
         }
     }
 }
