@@ -24,18 +24,98 @@ namespace Home_automation
     /// </summary>
     public partial class MainWindow : Window
     {
-        private const int PORT_NO = 23;
-        private const string SERVER_IP = "192.168.0.10";
-
-        private bool readtemp;
+        private Arduino _arduino;
+        private bool _readtemp;
 
         public MainWindow()
         {
             InitializeComponent();
-            ServerIPTxt.Text = SERVER_IP;
+
+            _arduino = new Arduino("192.168.0.10", 23);
         }
 
-        private string ArduinoDataExchange(string toSend)
+
+        private void ArduinoLedOnBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _arduino.ArduinoDataExchange("on0");
+        }
+
+        private void ArduinoLedOffBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _arduino.ArduinoDataExchange("off0");
+        }
+
+        private async void ArduinoDHT22_Click(object sender, RoutedEventArgs e)
+        {
+            ConnectionStatusLbl.Content = "Connecting";
+            _arduino.ServerConnectionOK = true;
+
+            _readtemp = true;
+            while (_readtemp && _arduino.ServerConnectionOK)
+            {
+                string receivedFromArduino = await Task.Run(() => 
+                { 
+                    Thread.Sleep(1000); 
+                    return _arduino.ArduinoDataExchange("th0"); 
+                });
+
+                if (receivedFromArduino != "" && receivedFromArduino.Contains("&"))
+                {
+                    TempLbl.Content = receivedFromArduino.Split('&')[0] + " °C";
+                    HumLbl.Content = receivedFromArduino.Split('&')[1] + " %";
+                    _arduino.TempHumSensorNo1OK = true;
+                }
+                if (receivedFromArduino.Contains("NAN"))
+                {
+                    ConnectionStatusLbl.Content = "No con DHT22";
+                    _arduino.TempHumSensorNo1OK = false;
+                }
+                
+                if (receivedFromArduino == "Disconnected")
+                {
+                    ConnectionStatusLbl.Content = "Disconnected";
+                    TempLbl.Content = "NaN °C";
+                    HumLbl.Content = "NaN %";
+
+                    _arduino.ServerConnectionOK = false;
+                }
+                else
+                {
+                    ConnectionStatusLbl.Content = "Connected";
+                    _arduino.ServerConnectionOK = true;
+                }
+            }
+        }
+
+        private void ArduinoDHT22_off_Click(object sender, RoutedEventArgs e)
+        {
+            _readtemp = false;
+        }
+
+        private void ConnectToArduinoServerBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void DisconnectToArduinoServerBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+    }
+    internal class Arduino
+    {
+        public string ServerIP { get; }
+        public int ServerPort { get; }
+        public bool ServerConnectionOK { get; set; }
+        public bool TempHumSensorNo1OK { get; set; }
+
+        public Arduino(string ServerIP, int ServerPort)
+        {
+            this.ServerIP = ServerIP;
+            this.ServerPort = ServerPort;
+        }
+        public string ArduinoDataExchange(string toSend)
         {
             TcpClient client;
             NetworkStream nwStream;
@@ -46,7 +126,7 @@ namespace Home_automation
             {
 
                 //---create a TCPClient object at the IP and port no.---
-                client = new TcpClient(SERVER_IP, PORT_NO);
+                client = new TcpClient(ServerIP, ServerPort);
 
                 nwStream = client.GetStream();
                 //ConnectToArduinoServerBtn.Background = new SolidColorBrush(Color.FromArgb(255, 4, 255, 88));
@@ -85,68 +165,6 @@ namespace Home_automation
             }
 
             return myCompleteMessage.ToString();
-        }
-
-        private void ArduinoLedOnBtn_Click(object sender, RoutedEventArgs e)
-        {
-            ArduinoDataExchange("on0");
-        }
-
-        private void ArduinoLedOffBtn_Click(object sender, RoutedEventArgs e)
-        {
-            ArduinoDataExchange("off0");
-        }
-
-        private async void ArduinoDHT22_Click(object sender, RoutedEventArgs e)
-        {
-            ConnectionStatusLbl.Content = "Connecting";
-
-            readtemp = true;
-            while (readtemp && (string)ConnectionStatusLbl.Content != "Disconnected")
-            {
-                string receivedFromArduino = await Task.Run(() => 
-                { 
-                    Thread.Sleep(1000); 
-                    return ArduinoDataExchange("th0"); 
-                });
-
-                if (receivedFromArduino != "" && receivedFromArduino.Contains("&"))
-                {
-                    TempLbl.Content = receivedFromArduino.Split('&')[0] + " °C";
-                    HumLbl.Content = receivedFromArduino.Split('&')[1] + " %";
-                }
-                if (receivedFromArduino.Contains("NAN"))
-                {
-                    ConnectionStatusLbl.Content = "No con DHT22";
-                }
-                
-                if (receivedFromArduino == "Disconnected")
-                {
-                    ConnectionStatusLbl.Content = "Disconnected";
-
-                    TempLbl.Content = "NaN °C";
-                    HumLbl.Content = "NaN %";
-                }
-                else
-                {
-                    ConnectionStatusLbl.Content = "Connected";
-                }
-            }
-        }
-
-        private void ArduinoDHT22_off_Click(object sender, RoutedEventArgs e)
-        {
-            readtemp = false;
-        }
-
-        private void ConnectToArduinoServerBtn_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void DisconnectToArduinoServerBtn_Click(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 }
