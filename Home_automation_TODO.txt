@@ -1,0 +1,13 @@
+1. Susikurt struktura kuri butu kaip sistemos busena - talpins davikliu pranesimus, connection state etc
+.
+.
+.
+SQL dalis
+.
+.
+.
+Isideti indikatorius
+.
+.
+.
+Grafika sutvarkyti
