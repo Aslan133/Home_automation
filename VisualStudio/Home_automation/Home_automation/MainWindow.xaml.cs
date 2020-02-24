@@ -27,13 +27,12 @@ namespace Home_automation
         private const int PORT_NO = 23;
         private const string SERVER_IP = "192.168.0.10";
 
-        //private Thread th;
         private bool readtemp;
 
         public MainWindow()
         {
             InitializeComponent();
-
+            ServerIPTxt.Text = SERVER_IP;
         }
 
         private string ArduinoDataExchange(string toSend)
@@ -82,7 +81,7 @@ namespace Home_automation
             }
             catch (SocketException)
             {
-                //ConnectionStatusLbl.Content = "Disconnected";
+                myCompleteMessage.AppendFormat("Disconnected");
             }
 
             return myCompleteMessage.ToString();
@@ -100,8 +99,10 @@ namespace Home_automation
 
         private async void ArduinoDHT22_Click(object sender, RoutedEventArgs e)
         {
+            ConnectionStatusLbl.Content = "Connecting";
+
             readtemp = true;
-            while (readtemp)
+            while (readtemp && (string)ConnectionStatusLbl.Content != "Disconnected")
             {
                 string receivedFromArduino = await Task.Run(() => 
                 { 
@@ -113,6 +114,22 @@ namespace Home_automation
                 {
                     TempLbl.Content = receivedFromArduino.Split('&')[0] + " °C";
                     HumLbl.Content = receivedFromArduino.Split('&')[1] + " %";
+                }
+                if (receivedFromArduino.Contains("NAN"))
+                {
+                    ConnectionStatusLbl.Content = "No con DHT22";
+                }
+                
+                if (receivedFromArduino == "Disconnected")
+                {
+                    ConnectionStatusLbl.Content = "Disconnected";
+
+                    TempLbl.Content = "NaN °C";
+                    HumLbl.Content = "NaN %";
+                }
+                else
+                {
+                    ConnectionStatusLbl.Content = "Connected";
                 }
             }
         }
