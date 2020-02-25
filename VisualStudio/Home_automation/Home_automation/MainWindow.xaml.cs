@@ -16,6 +16,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Diagnostics;
+using System.IO;
 
 namespace Home_automation
 {
@@ -35,6 +36,7 @@ namespace Home_automation
 
             AddErrorCbxUpdateToErrorEvent(_arduino.ArduinoErrors);
 
+
             //Update();
         }
 
@@ -52,10 +54,9 @@ namespace Home_automation
         private async void ArduinoDHT22_Click(object sender, RoutedEventArgs e)
         {
             ConnectionStatusLbl.Content = "Connecting";
-            _arduino.ArduinoErrors["ServerComErr"].IsActive = false;
 
             _readtemp = true;
-            while (_readtemp && !_arduino.ArduinoErrors["ServerComErr"].IsActive)
+            while (_readtemp)
             {
                 string receivedFromArduino = await Task.Run(() => 
                 { 
@@ -67,12 +68,20 @@ namespace Home_automation
                 {
                     TempLbl.Content = receivedFromArduino.Split('&')[0] + " °C";
                     HumLbl.Content = receivedFromArduino.Split('&')[1] + " %";
-                    _arduino.ArduinoErrors["DHT_No1Err"].IsActive = false;
-                }
-                if (receivedFromArduino.Contains("NAN"))
-                {
-                    ConnectionStatusLbl.Content = "No con DHT22";
-                    _arduino.ArduinoErrors["DHT_No1Err"].IsActive = true;
+
+                    double _temp;
+                    if (double.TryParse(receivedFromArduino.Split('&')[0].Replace('.', ','), out _temp))
+                    {
+                        _arduino.ArduinoErrors["DHT_No1Err"].IsActive = false;
+                    }
+                    else
+                    {
+                        ConnectionStatusLbl.Content = "No con DHT22";
+                        if (!_arduino.ArduinoErrors["DHT_No1Err"].IsActive)
+                        {
+                            _arduino.ArduinoErrors["DHT_No1Err"].IsActive = true;
+                        }
+                    }
                 }
                 
                 if (receivedFromArduino == "Disconnected")
@@ -81,7 +90,12 @@ namespace Home_automation
                     TempLbl.Content = "NaN °C";
                     HumLbl.Content = "NaN %";
 
-                    _arduino.ArduinoErrors["ServerComErr"].IsActive = true;
+                    if (!_arduino.ArduinoErrors["ServerComErr"].IsActive)
+                    {
+                        _arduino.ArduinoErrors["ServerComErr"].IsActive = true;
+                    }
+                    
+                    _readtemp = false;
                 }
                 else
                 {
@@ -121,17 +135,9 @@ namespace Home_automation
         }
         private void RefreshErrorCombobox(object sender, System.EventArgs e)
         {
-            ErrorMessageCbx.Items.Clear();
+            ErrorMessageCbx.ItemsSource = null;
             ErrorMessageCbx.ItemsSource = ActiveErrors(_arduino.ArduinoErrors);
         }
-        //private async void Update()
-        //{
-        //    await Task.Run(() =>
-        //    {
-        //        ErrorMessageCbx.ItemsSource = ActiveErrors(_arduino.ArduinoErrors);
-        //        Thread.Sleep(1000);
-        //    }).ContinueWith((hh) => RefreshErrorCombobox());
-        //}
         private void AddErrorCbxUpdateToErrorEvent(params Dictionary<string, Error>[] errors)
         {
             foreach (var errDict in errors)
@@ -211,7 +217,6 @@ namespace Home_automation
             catch (SocketException)
             {
                 myCompleteMessage.AppendFormat("Disconnected");
-                ArduinoErrors["ServerComErr"].IsActive = true;
             }
 
             return myCompleteMessage.ToString();
@@ -225,15 +230,20 @@ namespace Home_automation
             if (ErrorStateChanged != null) ErrorStateChanged(this, EventArgs.Empty);
         }
 
+        private bool _isActive;
         public bool IsActive 
         {
             get 
             {
-                return IsActive;
+                return _isActive;
             }
             set 
             {
-                IsActive = value;
+                _isActive = value;
+                if (value == true)
+                {
+                    ErrorLogger();
+                }
                 OnStateChanged();
             } 
         }
@@ -242,6 +252,14 @@ namespace Home_automation
         {
             this.Message = Message;
         }
+        private void ErrorLogger()
+        {
+            string path = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10);
 
+            using (StreamWriter file = new StreamWriter(path+"ErrorLog.txt", true))
+            {
+                file.WriteLine(Message + ": " + DateTime.Now.ToString());
+            }
+        }
     }
 }
