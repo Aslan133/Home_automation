@@ -1,4 +1,8 @@
-1. Susikurt struktura kuri butu kaip sistemos busena - talpins davikliu pranesimus, connection state etc
+*error log i faila
+.
+.
+.
+refreshint combobox tik kai klaida buna
 .
 .
 .

@@ -32,6 +32,10 @@ namespace Home_automation
             InitializeComponent();
 
             _arduino = new Arduino("192.168.0.10", 23);
+
+            AddErrorCbxUpdateToErrorEvent(_arduino.ArduinoErrors);
+
+            //Update();
         }
 
 
@@ -48,10 +52,10 @@ namespace Home_automation
         private async void ArduinoDHT22_Click(object sender, RoutedEventArgs e)
         {
             ConnectionStatusLbl.Content = "Connecting";
-            _arduino.ServerConnectionOK = true;
+            _arduino.ArduinoErrors["ServerComErr"].IsActive = false;
 
             _readtemp = true;
-            while (_readtemp && _arduino.ServerConnectionOK)
+            while (_readtemp && !_arduino.ArduinoErrors["ServerComErr"].IsActive)
             {
                 string receivedFromArduino = await Task.Run(() => 
                 { 
@@ -63,12 +67,12 @@ namespace Home_automation
                 {
                     TempLbl.Content = receivedFromArduino.Split('&')[0] + " °C";
                     HumLbl.Content = receivedFromArduino.Split('&')[1] + " %";
-                    _arduino.TempHumSensorNo1OK = true;
+                    _arduino.ArduinoErrors["DHT_No1Err"].IsActive = false;
                 }
                 if (receivedFromArduino.Contains("NAN"))
                 {
                     ConnectionStatusLbl.Content = "No con DHT22";
-                    _arduino.TempHumSensorNo1OK = false;
+                    _arduino.ArduinoErrors["DHT_No1Err"].IsActive = true;
                 }
                 
                 if (receivedFromArduino == "Disconnected")
@@ -77,12 +81,12 @@ namespace Home_automation
                     TempLbl.Content = "NaN °C";
                     HumLbl.Content = "NaN %";
 
-                    _arduino.ServerConnectionOK = false;
+                    _arduino.ArduinoErrors["ServerComErr"].IsActive = true;
                 }
                 else
                 {
                     ConnectionStatusLbl.Content = "Connected";
-                    _arduino.ServerConnectionOK = true;
+                    _arduino.ArduinoErrors["ServerComErr"].IsActive = false;
                 }
             }
         }
@@ -115,13 +119,34 @@ namespace Home_automation
 
             return activeErrors;
         }
+        private void RefreshErrorCombobox(object sender, System.EventArgs e)
+        {
+            ErrorMessageCbx.Items.Clear();
+            ErrorMessageCbx.ItemsSource = ActiveErrors(_arduino.ArduinoErrors);
+        }
+        //private async void Update()
+        //{
+        //    await Task.Run(() =>
+        //    {
+        //        ErrorMessageCbx.ItemsSource = ActiveErrors(_arduino.ArduinoErrors);
+        //        Thread.Sleep(1000);
+        //    }).ContinueWith((hh) => RefreshErrorCombobox());
+        //}
+        private void AddErrorCbxUpdateToErrorEvent(params Dictionary<string, Error>[] errors)
+        {
+            foreach (var errDict in errors)
+            {
+                foreach (var err in errDict)
+                {
+                    err.Value.ErrorStateChanged += RefreshErrorCombobox;
+                }
+            }
+        }
     }
     internal class Arduino
     {
         public string ServerIP { get; }
         public int ServerPort { get; }
-        public bool ServerConnectionOK { get; set; }
-        public bool TempHumSensorNo1OK { get; set; }
         public Dictionary<string, Error> ArduinoErrors { get; set; }
 
         public Arduino(string ServerIP, int ServerPort)
@@ -177,11 +202,16 @@ namespace Home_automation
             }
             catch (ArgumentNullException)
             {
-                throw new System.ArgumentNullException("Parameter cannot be null", "original");
+                //throw new System.ArgumentNullException("Parameter cannot be null", "original");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                //throw new System.ArgumentNullException("Parameter cannot be null", "original");
             }
             catch (SocketException)
             {
                 myCompleteMessage.AppendFormat("Disconnected");
+                ArduinoErrors["ServerComErr"].IsActive = true;
             }
 
             return myCompleteMessage.ToString();
@@ -189,11 +219,29 @@ namespace Home_automation
     }
     internal class Error
     {
-        public bool IsActive { get; set; }
+        public event EventHandler ErrorStateChanged;
+        private void OnStateChanged()
+        {
+            if (ErrorStateChanged != null) ErrorStateChanged(this, EventArgs.Empty);
+        }
+
+        public bool IsActive 
+        {
+            get 
+            {
+                return IsActive;
+            }
+            set 
+            {
+                IsActive = value;
+                OnStateChanged();
+            } 
+        }
         public string Message { get; }
         public Error(string Message)
         {
             this.Message = Message;
         }
+
     }
 }
