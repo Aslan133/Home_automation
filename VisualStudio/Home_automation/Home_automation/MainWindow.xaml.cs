@@ -36,6 +36,7 @@ namespace Home_automation
 
             AddErrorCbxUpdateToErrorEvent(_arduino.ArduinoErrors);
 
+            TcpListener server = new TcpListener(IPAddress.Any, 9999);
 
             //Update();
         }
