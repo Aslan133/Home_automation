@@ -35,19 +35,41 @@ void setup() {
  
     delay(1000);
  
-    // Print TCP server client connection info
+    dht.begin();
+}
+ 
+void loop() {
+  // Send temp-hum to pc
+    hum = dht.readHumidity();
+    temp= dht.readTemperature();
+    Serial.println(String(temp) + "&" + String(hum));
+  
+  // Print TCP server client connection info
     if (client.connect(ip_server, port)) {
       Serial.println("connected");
-      client.println("GET /search?q=arduino HTTP/1.0");
+      Serial.println("Sending: " + String(temp) + "&" + String(hum));
+      client.println(String(temp) + "&" + String(hum) + "<EOF>");
       client.println();
     } else {
       Serial.println("connection failed");
     }
 
-    dht.begin();
-}
- 
-void loop() {
+  
+  if (client.available()) {
+    char c = client.read();
+    Serial.print(c);
+  }
+
+  if (!client.connected()) {
+    Serial.println();
+    Serial.println("disconnecting.");
+    client.stop();
+    //for(;;)
+    //  ;
+  }
+
+delay(3000);
+  
   /*
     EthernetClient client = server.available();
 

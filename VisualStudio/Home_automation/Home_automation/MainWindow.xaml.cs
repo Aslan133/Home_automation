@@ -17,6 +17,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Diagnostics;
 using System.IO;
+using System.Windows.Threading;
 
 namespace Home_automation
 {
@@ -25,18 +26,23 @@ namespace Home_automation
     /// </summary>
     public partial class MainWindow : Window
     {
-        private Arduino _arduino;
+        //private Arduino _arduino;
         private bool _readtemp;
+        private AsynchronousSocketListener _asyncSocketListener;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            _arduino = new Arduino("192.168.0.10", 23);
+            _asyncSocketListener = new AsynchronousSocketListener(ref TempLbl, ref HumLbl);
 
-            AddErrorCbxUpdateToErrorEvent(_arduino.ArduinoErrors);
+            
 
-            TcpListener server = new TcpListener(IPAddress.Any, 9999);
+            //_arduino = new Arduino("192.168.0.10", 23);
+
+            //AddErrorCbxUpdateToErrorEvent(_arduino.ArduinoErrors);
+
+            //TcpListener server = new TcpListener(IPAddress.Any, 9999);
 
             //Update();
         }
@@ -44,27 +50,22 @@ namespace Home_automation
 
         private void ArduinoLedOnBtn_Click(object sender, RoutedEventArgs e)
         {
-            _arduino.ArduinoDataExchange("on0");
+            //_arduino.ArduinoDataExchange("on0");
         }
 
         private void ArduinoLedOffBtn_Click(object sender, RoutedEventArgs e)
         {
-            _arduino.ArduinoDataExchange("off0");
+            //_arduino.ArduinoDataExchange("off0");
         }
 
         private async void ArduinoDHT22_Click(object sender, RoutedEventArgs e)
         {
-            ConnectionStatusLbl.Content = "Connecting";
-
-            _readtemp = true;
-            while (_readtemp)
-            {
-                string receivedFromArduino = await Task.Run(() => 
-                { 
-                    Thread.Sleep(1000); 
-                    return _arduino.ArduinoDataExchange("th0"); 
+            
+                await Task.Run(() =>
+                {
+                    _asyncSocketListener.StartListening();
                 });
-
+            /*
                 if (receivedFromArduino != "" && receivedFromArduino.Contains("&"))
                 {
                     TempLbl.Content = receivedFromArduino.Split('&')[0] + " °C";
@@ -83,32 +84,67 @@ namespace Home_automation
                             _arduino.ArduinoErrors["DHT_No1Err"].IsActive = true;
                         }
                     }
-                }
-                
-                if (receivedFromArduino == "Disconnected")
-                {
-                    ConnectionStatusLbl.Content = "Disconnected";
-                    TempLbl.Content = "NaN °C";
-                    HumLbl.Content = "NaN %";
+                */
 
-                    if (!_arduino.ArduinoErrors["ServerComErr"].IsActive)
-                    {
-                        _arduino.ArduinoErrors["ServerComErr"].IsActive = true;
-                    }
-                    
-                    _readtemp = false;
-                }
-                else
+
+                /*
+                ConnectionStatusLbl.Content = "Connecting";
+
+                _readtemp = true;
+                while (_readtemp)
                 {
-                    ConnectionStatusLbl.Content = "Connected";
-                    _arduino.ArduinoErrors["ServerComErr"].IsActive = false;
+                    string receivedFromArduino = await Task.Run(() => 
+                    { 
+                        Thread.Sleep(1000); 
+                        return _arduino.ArduinoDataExchange("th0"); 
+                    });
+
+                    if (receivedFromArduino != "" && receivedFromArduino.Contains("&"))
+                    {
+                        TempLbl.Content = receivedFromArduino.Split('&')[0] + " °C";
+                        HumLbl.Content = receivedFromArduino.Split('&')[1] + " %";
+
+                        double _temp;
+                        if (double.TryParse(receivedFromArduino.Split('&')[0].Replace('.', ','), out _temp))
+                        {
+                            _arduino.ArduinoErrors["DHT_No1Err"].IsActive = false;
+                        }
+                        else
+                        {
+                            ConnectionStatusLbl.Content = "No con DHT22";
+                            if (!_arduino.ArduinoErrors["DHT_No1Err"].IsActive)
+                            {
+                                _arduino.ArduinoErrors["DHT_No1Err"].IsActive = true;
+                            }
+                        }
+                    }
+
+                    if (receivedFromArduino == "Disconnected")
+                    {
+                        ConnectionStatusLbl.Content = "Disconnected";
+                        TempLbl.Content = "NaN °C";
+                        HumLbl.Content = "NaN %";
+
+                        if (!_arduino.ArduinoErrors["ServerComErr"].IsActive)
+                        {
+                            _arduino.ArduinoErrors["ServerComErr"].IsActive = true;
+                        }
+
+                        _readtemp = false;
+                    }
+                    else
+                    {
+                        ConnectionStatusLbl.Content = "Connected";
+                        _arduino.ArduinoErrors["ServerComErr"].IsActive = false;
+                    }
                 }
+                */
             }
-        }
 
         private void ArduinoDHT22_off_Click(object sender, RoutedEventArgs e)
         {
-            _readtemp = false;
+
+            _asyncSocketListener.StopListening();
         }
 
         private void ConnectToArduinoServerBtn_Click(object sender, RoutedEventArgs e)
@@ -137,7 +173,7 @@ namespace Home_automation
         private void RefreshErrorCombobox(object sender, System.EventArgs e)
         {
             ErrorMessageCbx.ItemsSource = null;
-            ErrorMessageCbx.ItemsSource = ActiveErrors(_arduino.ArduinoErrors);
+            //ErrorMessageCbx.ItemsSource = ActiveErrors(_arduino.ArduinoErrors);
         }
         private void AddErrorCbxUpdateToErrorEvent(params Dictionary<string, Error>[] errors)
         {
@@ -262,5 +298,186 @@ namespace Home_automation
                 file.WriteLine(Message + ": " + DateTime.Now.ToString());
             }
         }
+    }
+
+
+
+
+    public class StateObject
+    {
+        // Client  socket.  
+        public Socket workSocket = null;
+        // Size of receive buffer.  
+        public const int BufferSize = 1024;
+        // Receive buffer.  
+        public byte[] buffer = new byte[BufferSize];
+        // Received data string.  
+        public StringBuilder sb = new StringBuilder();
+    }
+
+    public class AsynchronousSocketListener
+    {
+        private bool _stopListening;
+        private Label _tempLabel;
+        private Label _humLabel;
+
+        // Thread signal.  
+        public static ManualResetEvent allDone = new ManualResetEvent(false);
+
+        public AsynchronousSocketListener(ref Label tempLbl, ref Label humLbl)
+        {
+            _tempLabel = tempLbl;
+            _humLabel = humLbl;
+        }
+
+        public void StartListening()
+        {
+            // Establish the local endpoint for the socket.  
+            // The DNS name of the computer  
+            // running the listener is "host.contoso.com".  
+            IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+            IPAddress ipAddress = ipHostInfo.AddressList[1];
+            IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
+
+            Console.WriteLine(ipHostInfo.AddressList[1]);
+
+            // Create a TCP/IP socket.  
+            Socket listener = new Socket(ipAddress.AddressFamily,
+                SocketType.Stream, ProtocolType.Tcp);
+
+              
+
+            // Bind the socket to the local endpoint and listen for incoming connections.  
+            try
+            {
+                listener.Bind(localEndPoint);
+                listener.Listen(100);
+
+                while (!_stopListening)
+                {
+                    // Set the event to nonsignaled state.  
+                    allDone.Reset();
+
+                    // Start an asynchronous socket to listen for connections.  
+                    Console.WriteLine("Waiting for a connection...");
+                    listener.BeginAccept(
+                        new AsyncCallback(AcceptCallback),
+                        listener);
+
+                    // Wait until a connection is made before continuing.  
+                    allDone.WaitOne();
+                }
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+
+            Console.WriteLine("\nPress ENTER to continue...");
+            Console.Read();
+
+        }
+        public void StopListening()
+        {
+            _stopListening = true;
+        }
+
+        public void AcceptCallback(IAsyncResult ar)
+        {
+            // Signal the main thread to continue.  
+            allDone.Set();
+
+            // Get the socket that handles the client request.  
+            Socket listener = (Socket)ar.AsyncState;
+            Socket handler = listener.EndAccept(ar);
+
+            // Create the state object.  
+            StateObject state = new StateObject();
+            state.workSocket = handler;
+            handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
+                new AsyncCallback(ReadCallback), state);
+        }
+
+        public void ReadCallback(IAsyncResult ar)
+        {
+            String content = String.Empty;
+
+            // Retrieve the state object and the handler socket  
+            // from the asynchronous state object.  
+            StateObject state = (StateObject)ar.AsyncState;
+            Socket handler = state.workSocket;
+
+            // Read data from the client socket.   
+            int bytesRead = handler.EndReceive(ar);
+
+            if (bytesRead > 0)
+            {
+                // There  might be more data, so store the data received so far.  
+                state.sb.Append(Encoding.ASCII.GetString(
+                    state.buffer, 0, bytesRead));
+
+                // Check for end-of-file tag. If it is not there, read   
+                // more data.  
+                content = state.sb.ToString();
+                if (content.IndexOf("<EOF>") > -1)
+                {
+                    // All the data has been read from the   
+                    // client. Display it on the console.  
+                    Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
+                        content.Length, content);
+
+                    if (content.Contains("&"))
+                    {
+                        Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => 
+                        { 
+                            _tempLabel.Content = content.Split('&')[0] + " °C";
+                            _humLabel.Content = content.Split('&')[1].Split('<')[0] + " %";
+                        }));
+                    }
+
+                        // Echo the data back to the client.  
+                        Send(handler, content);
+                }
+                else
+                {
+                    // Not all data received. Get more.  
+                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
+                    new AsyncCallback(ReadCallback), state);
+                }
+            }
+        }
+
+        private static void Send(Socket handler, String data)
+        {
+            // Convert the string data to byte data using ASCII encoding.  
+            byte[] byteData = Encoding.ASCII.GetBytes(data);
+
+            // Begin sending the data to the remote device.  
+            handler.BeginSend(byteData, 0, byteData.Length, 0,
+                new AsyncCallback(SendCallback), handler);
+        }
+
+        private static void SendCallback(IAsyncResult ar)
+        {
+            try
+            {
+                // Retrieve the socket from the state object.  
+                Socket handler = (Socket)ar.AsyncState;
+
+                // Complete sending the data to the remote device.  
+                int bytesSent = handler.EndSend(ar);
+                Console.WriteLine("Sent {0} bytes to client.", bytesSent);
+
+                handler.Shutdown(SocketShutdown.Both);
+                handler.Close();
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+        }
+
     }
 }
