@@ -48,35 +48,13 @@ void loop() {
     if (client.connect(ip_server, port)) {
       Serial.println("connected");
       Serial.println("Sending: " + String(temp) + "&" + String(hum));
-      client.println(String(temp) + "&" + String(hum) + "<EOF>");
+      client.println(String(temp) + "&" + String(hum) + "<");
       client.println();
-    } else {
-      Serial.println("connection failed");
-    }
 
-  
-  if (client.available()) {
-    char c = client.read();
-    Serial.print(c);
-  }
 
-  if (!client.connected()) {
-    Serial.println();
-    Serial.println("disconnecting.");
-    client.stop();
-    //for(;;)
-    //  ;
-  }
-
-delay(3000);
-  
-  /*
-    EthernetClient client = server.available();
-
-    if (client.available()) {
-        // Read char until linefeed
-        char c = client.read(); 
-        if (c != '0') {
+      while(client.available()){
+         char c = client.read();
+         if (c != '<') {
             // Add received char to string variable 
             commandStr += c;
         } else {
@@ -89,27 +67,32 @@ delay(3000);
             // Clear variable for receive next command
             commandStr = "";
         }
+      }
+      
+
+      if (!client.connected()) {
+        Serial.println();
+        Serial.println("disconnecting.");
+        client.stop();
+        //for(;;)
+        //  ;
+    
+    } else {
+      Serial.println("connection failed");
     }
-    */
+  }
+
+delay(3000);
+  
 }
-/*
+
 void processCommand(String cmd) {
     if (cmd == "on") {
         // Turn on LED
         bitSet(PORTD, 2);
-        server.println(cmd);
     } else if (cmd == "off") {
         // Turn off LED
         bitClear(PORTD, 2);
-        server.println(cmd);
-    }else if (cmd == "th") {
-        // Send temp-hum to pc
-        hum = dht.readHumidity();
-        temp= dht.readTemperature();
-        Serial.println(String(temp) + "&" + String(hum));
-        server.println(String(temp) + "&" + String(hum));
-        
     }
     
 }
-*/

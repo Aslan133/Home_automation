@@ -1,12 +1,19 @@
-*error log i faila
 .
 .
 .
-refreshint combobox tik kai klaida buna
+SQL dalis:
+1. Surasymas i duombaze: DayTempHum
+2. Atvaizdavimas: leisti isskleisti pagal laiko ribas
+3. Surasyti dienu vid temp hum i MonthTempHum
+4. atvaizdavimas toks pat
 .
 .
 .
-SQL dalis
+prisijugimas pries serverio nuotoliniu budu
+.
+.
+.
+?
 .
 .
 .

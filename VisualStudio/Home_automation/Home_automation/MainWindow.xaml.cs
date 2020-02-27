@@ -27,17 +27,17 @@ namespace Home_automation
     public partial class MainWindow : Window
     {
         //private Arduino _arduino;
-        private ArduinoAsynchronousSocketListener _asyncSocketListener;
+        private ArduinoAsynchronousSocketListener _arduinoAsyncSocketListener;
         
 
         public MainWindow()
         {
             InitializeComponent();
 
-            _asyncSocketListener = new ArduinoAsynchronousSocketListener(ref TempLbl, ref HumLbl);
+            _arduinoAsyncSocketListener = new ArduinoAsynchronousSocketListener(ref TempLbl, ref HumLbl);
             StartServer();
 
-            //AddErrorCbxUpdateToErrorEvent(_arduino.ArduinoErrors);
+            AddErrorCbxUpdateToErrorEvent(_arduinoAsyncSocketListener.ArduinoErrors);
 
             //TcpListener server = new TcpListener(IPAddress.Any, 9999);
 
@@ -47,97 +47,23 @@ namespace Home_automation
         {
             await Task.Run(() =>
             {
-                _asyncSocketListener.StartServer();
+                _arduinoAsyncSocketListener.StartServer();
             });
         }
 
         private void ArduinoLedOnBtn_Click(object sender, RoutedEventArgs e)
         {
-            //_arduino.ArduinoDataExchange("on0");
+            _arduinoAsyncSocketListener.NeedLed = true;
         }
-
         private void ArduinoLedOffBtn_Click(object sender, RoutedEventArgs e)
         {
-            //_arduino.ArduinoDataExchange("off0");
+            _arduinoAsyncSocketListener.NeedLed = false;
         }
 
         private async void ArduinoDHT22_Click(object sender, RoutedEventArgs e)
         {
             
-            
-
-            /*
-                if (receivedFromArduino != "" && receivedFromArduino.Contains("&"))
-                {
-                    TempLbl.Content = receivedFromArduino.Split('&')[0] + " °C";
-                    HumLbl.Content = receivedFromArduino.Split('&')[1] + " %";
-
-                    double _temp;
-                    if (double.TryParse(receivedFromArduino.Split('&')[0].Replace('.', ','), out _temp))
-                    {
-                        _arduino.ArduinoErrors["DHT_No1Err"].IsActive = false;
-                    }
-                    else
-                    {
-                        ConnectionStatusLbl.Content = "No con DHT22";
-                        if (!_arduino.ArduinoErrors["DHT_No1Err"].IsActive)
-                        {
-                            _arduino.ArduinoErrors["DHT_No1Err"].IsActive = true;
-                        }
-                    }
-                
-                ConnectionStatusLbl.Content = "Connecting";
-
-                _readtemp = true;
-                while (_readtemp)
-                {
-                    string receivedFromArduino = await Task.Run(() => 
-                    { 
-                        Thread.Sleep(1000); 
-                        return _arduino.ArduinoDataExchange("th0"); 
-                    });
-
-                    if (receivedFromArduino != "" && receivedFromArduino.Contains("&"))
-                    {
-                        TempLbl.Content = receivedFromArduino.Split('&')[0] + " °C";
-                        HumLbl.Content = receivedFromArduino.Split('&')[1] + " %";
-
-                        double _temp;
-                        if (double.TryParse(receivedFromArduino.Split('&')[0].Replace('.', ','), out _temp))
-                        {
-                            _arduino.ArduinoErrors["DHT_No1Err"].IsActive = false;
-                        }
-                        else
-                        {
-                            ConnectionStatusLbl.Content = "No con DHT22";
-                            if (!_arduino.ArduinoErrors["DHT_No1Err"].IsActive)
-                            {
-                                _arduino.ArduinoErrors["DHT_No1Err"].IsActive = true;
-                            }
-                        }
-                    }
-
-                    if (receivedFromArduino == "Disconnected")
-                    {
-                        ConnectionStatusLbl.Content = "Disconnected";
-                        TempLbl.Content = "NaN °C";
-                        HumLbl.Content = "NaN %";
-
-                        if (!_arduino.ArduinoErrors["ServerComErr"].IsActive)
-                        {
-                            _arduino.ArduinoErrors["ServerComErr"].IsActive = true;
-                        }
-
-                        _readtemp = false;
-                    }
-                    else
-                    {
-                        ConnectionStatusLbl.Content = "Connected";
-                        _arduino.ArduinoErrors["ServerComErr"].IsActive = false;
-                    }
-                }
-                */
-            }
+        }
 
         private void ArduinoDHT22_off_Click(object sender, RoutedEventArgs e)
         {
@@ -169,8 +95,11 @@ namespace Home_automation
         }
         private void RefreshErrorCombobox(object sender, System.EventArgs e)
         {
-            ErrorMessageCbx.ItemsSource = null;
-            ErrorMessageCbx.ItemsSource = ActiveErrors(_arduino.ArduinoErrors);
+            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            {
+                ErrorMessageCbx.ItemsSource = null;
+                ErrorMessageCbx.ItemsSource = ActiveErrors(_arduinoAsyncSocketListener.ArduinoErrors);
+            }));
         }
         private void AddErrorCbxUpdateToErrorEvent(params Dictionary<string, Error>[] errors)
         {
@@ -227,7 +156,6 @@ namespace Home_automation
             }
         }
     }
-
     public class StateObject
     {
         // Client  socket.  
@@ -239,10 +167,10 @@ namespace Home_automation
         // Received data string.  
         public StringBuilder sb = new StringBuilder();
     }
-
     internal class ArduinoAsynchronousSocketListener
     {
-        public Dictionary<string, Error> ArduinoErrors { get; set; }
+        public Dictionary<string, Error> ArduinoErrors { get; }
+        public bool NeedLed { get; set; }
 
         private Label _tempLabel;
         private Label _humLabel;
@@ -271,8 +199,6 @@ namespace Home_automation
             IPAddress ipAddress = ipHostInfo.AddressList[1];
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
 
-            Console.WriteLine(ipHostInfo.AddressList[1]);
-
             // Create a TCP/IP socket.  
             Socket listener = new Socket(ipAddress.AddressFamily,
                 SocketType.Stream, ProtocolType.Tcp);
@@ -290,11 +216,11 @@ namespace Home_automation
                     // Set the event to nonsignaled state.  
                     allDone.Reset();
 
-                    // Start an asynchronous socket to listen for connections.  
-                    Console.WriteLine("Waiting for a connection...");
-                    listener.BeginAccept(
-                        new AsyncCallback(AcceptCallback),
-                        listener);
+                    // Start an asynchronous socket to listen for connections. 
+                    listener.BeginAccept(new AsyncCallback(AcceptCallback), listener);
+
+
+                    ArduinoErrors["ServerComErr"].IsActive = false;
 
                     // Wait until a connection is made before continuing.  
                     allDone.WaitOne();
@@ -303,11 +229,11 @@ namespace Home_automation
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                if (!ArduinoErrors["ServerComErr"].IsActive)
+                {
+                    ArduinoErrors["ServerComErr"].IsActive = true;
+                }
             }
-
-            Console.WriteLine("\nPress ENTER to continue...");
-            Console.Read();
 
         }
 
@@ -323,8 +249,7 @@ namespace Home_automation
             // Create the state object.  
             StateObject state = new StateObject();
             state.workSocket = handler;
-            handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
-                new AsyncCallback(ReadCallback), state);
+            handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
         }
 
         public void ReadCallback(IAsyncResult ar)
@@ -346,7 +271,7 @@ namespace Home_automation
 
                 // Check for end-of-file tag. If it is not there, read more data.  
                 content = state.sb.ToString();
-                if (content.IndexOf("<EOF>") > -1)
+                if (content.IndexOf("<") > -1)
                 {
                     // All the data has been read from the client.
 
@@ -357,28 +282,54 @@ namespace Home_automation
                             _tempLabel.Content = content.Split('&')[0] + " °C";
                             _humLabel.Content = content.Split('&')[1].Split('<')[0] + " %";
                         }));
+
+                        double _temp;
+                        if (double.TryParse(content.Split('&')[0].Replace('.', ','), out _temp))
+                        {
+                            ArduinoErrors["DHT_No1Err"].IsActive = false;
+                        }
+                        else
+                        {
+                            if (!ArduinoErrors["DHT_No1Err"].IsActive)
+                            {
+                                ArduinoErrors["DHT_No1Err"].IsActive = true;
+                            }
+                        }
                     }
 
+                    //if (NeedLed)
+                    //{
+                    //    Send(handler, "on<");
+                    //}
+                    //else
+                    //{
+                    //    Send(handler, "off<");
+                    //}
                     // Echo the data back to the client.  
                     Send(handler, content);
                 }
                 else
                 {
                     // Not all data received. Get more.  
-                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
-                    new AsyncCallback(ReadCallback), state);
+                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
                 }
             }
         }
 
+        //public void SendArduinoCustomCommand(string content)
+        //{
+        //    StateObject state = (StateObject)ar.AsyncState;
+        //    Socket handler = state.workSocket;
+
+        //    Send(handler, content);
+        //}
         private static void Send(Socket handler, String data)
         {
             // Convert the string data to byte data using ASCII encoding.  
             byte[] byteData = Encoding.ASCII.GetBytes(data);
 
             // Begin sending the data to the remote device.  
-            handler.BeginSend(byteData, 0, byteData.Length, 0,
-                new AsyncCallback(SendCallback), handler);
+            handler.BeginSend(byteData, 0, byteData.Length, 0, new AsyncCallback(SendCallback), handler);
         }
 
         private static void SendCallback(IAsyncResult ar)
@@ -390,7 +341,6 @@ namespace Home_automation
 
                 // Complete sending the data to the remote device.  
                 int bytesSent = handler.EndSend(ar);
-                Console.WriteLine("Sent {0} bytes to client.", bytesSent);
 
                 handler.Shutdown(SocketShutdown.Both);
                 handler.Close();
@@ -398,7 +348,8 @@ namespace Home_automation
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                //Console.WriteLine(e.ToString());
+
             }
         }
 
