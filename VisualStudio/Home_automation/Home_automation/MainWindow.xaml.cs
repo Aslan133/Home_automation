@@ -27,18 +27,15 @@ namespace Home_automation
     public partial class MainWindow : Window
     {
         //private Arduino _arduino;
-        private bool _readtemp;
-        private AsynchronousSocketListener _asyncSocketListener;
+        private ArduinoAsynchronousSocketListener _asyncSocketListener;
+        
 
         public MainWindow()
         {
             InitializeComponent();
 
-            _asyncSocketListener = new AsynchronousSocketListener(ref TempLbl, ref HumLbl);
-
-            
-
-            //_arduino = new Arduino("192.168.0.10", 23);
+            _asyncSocketListener = new ArduinoAsynchronousSocketListener(ref TempLbl, ref HumLbl);
+            StartServer();
 
             //AddErrorCbxUpdateToErrorEvent(_arduino.ArduinoErrors);
 
@@ -46,7 +43,13 @@ namespace Home_automation
 
             //Update();
         }
-
+        private async void StartServer()
+        {
+            await Task.Run(() =>
+            {
+                _asyncSocketListener.StartServer();
+            });
+        }
 
         private void ArduinoLedOnBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -61,10 +64,8 @@ namespace Home_automation
         private async void ArduinoDHT22_Click(object sender, RoutedEventArgs e)
         {
             
-                await Task.Run(() =>
-                {
-                    _asyncSocketListener.StartListening();
-                });
+            
+
             /*
                 if (receivedFromArduino != "" && receivedFromArduino.Contains("&"))
                 {
@@ -84,10 +85,7 @@ namespace Home_automation
                             _arduino.ArduinoErrors["DHT_No1Err"].IsActive = true;
                         }
                     }
-                */
-
-
-                /*
+                
                 ConnectionStatusLbl.Content = "Connecting";
 
                 _readtemp = true;
@@ -144,7 +142,6 @@ namespace Home_automation
         private void ArduinoDHT22_off_Click(object sender, RoutedEventArgs e)
         {
 
-            _asyncSocketListener.StopListening();
         }
 
         private void ConnectToArduinoServerBtn_Click(object sender, RoutedEventArgs e)
@@ -173,7 +170,7 @@ namespace Home_automation
         private void RefreshErrorCombobox(object sender, System.EventArgs e)
         {
             ErrorMessageCbx.ItemsSource = null;
-            //ErrorMessageCbx.ItemsSource = ActiveErrors(_arduino.ArduinoErrors);
+            ErrorMessageCbx.ItemsSource = ActiveErrors(_arduino.ArduinoErrors);
         }
         private void AddErrorCbxUpdateToErrorEvent(params Dictionary<string, Error>[] errors)
         {
@@ -184,81 +181,12 @@ namespace Home_automation
                     err.Value.ErrorStateChanged += RefreshErrorCombobox;
                 }
             }
+            
         }
     }
-    internal class Arduino
-    {
-        public string ServerIP { get; }
-        public int ServerPort { get; }
-        public Dictionary<string, Error> ArduinoErrors { get; set; }
 
-        public Arduino(string ServerIP, int ServerPort)
-        {
-            this.ServerIP = ServerIP;
-            this.ServerPort = ServerPort;
+    //ConnectToArduinoServerBtn.Background = new SolidColorBrush(Color.FromArgb(255, 4, 255, 88));
 
-            #region InitErrors
-            ArduinoErrors = new Dictionary<string, Error>();
-            ArduinoErrors.Add("ServerComErr", new Error("Communication with Arduino TCP Server error"));
-            ArduinoErrors.Add("DHT_No1Err", new Error("Temperature/Humidity sensor error"));
-            #endregion
-        }
-        public string ArduinoDataExchange(string toSend)
-        {
-            TcpClient client;
-            NetworkStream nwStream;
-
-            StringBuilder myCompleteMessage = new StringBuilder();
-
-            try
-            {
-
-                //---create a TCPClient object at the IP and port no.---
-                client = new TcpClient(ServerIP, ServerPort);
-
-                nwStream = client.GetStream();
-                //ConnectToArduinoServerBtn.Background = new SolidColorBrush(Color.FromArgb(255, 4, 255, 88));
-
-
-                if (nwStream.CanRead && nwStream.CanWrite)
-                {
-                    //ConnectionStatusLbl.Content = "Connected";
-
-                    byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(toSend);
-                    nwStream.Write(bytesToSend, 0, bytesToSend.Length);
-
-                    byte[] myReadBuffer = new byte[1024];
-
-                    int numberOfBytesRead = 0;
-
-                    do
-                    {
-                        numberOfBytesRead = nwStream.Read(myReadBuffer, 0, myReadBuffer.Length);
-
-                        myCompleteMessage.AppendFormat("{0}", Encoding.ASCII.GetString(myReadBuffer, 0, numberOfBytesRead));
-                    }
-                    while (nwStream.DataAvailable);
-                }
-
-                nwStream.Close();
-                client.Close();
-            }
-            catch (ArgumentNullException)
-            {
-                //throw new System.ArgumentNullException("Parameter cannot be null", "original");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                //throw new System.ArgumentNullException("Parameter cannot be null", "original");
-            }
-            catch (SocketException)
-            {
-                myCompleteMessage.AppendFormat("Disconnected");
-            }
-
-            return myCompleteMessage.ToString();
-        }
-    }
     internal class Error
     {
         public event EventHandler ErrorStateChanged;
@@ -300,9 +228,6 @@ namespace Home_automation
         }
     }
 
-
-
-
     public class StateObject
     {
         // Client  socket.  
@@ -315,22 +240,29 @@ namespace Home_automation
         public StringBuilder sb = new StringBuilder();
     }
 
-    public class AsynchronousSocketListener
+    internal class ArduinoAsynchronousSocketListener
     {
-        private bool _stopListening;
+        public Dictionary<string, Error> ArduinoErrors { get; set; }
+
         private Label _tempLabel;
         private Label _humLabel;
 
         // Thread signal.  
         public static ManualResetEvent allDone = new ManualResetEvent(false);
 
-        public AsynchronousSocketListener(ref Label tempLbl, ref Label humLbl)
+        public ArduinoAsynchronousSocketListener(ref Label tempLbl, ref Label humLbl)
         {
             _tempLabel = tempLbl;
             _humLabel = humLbl;
+
+            #region InitErrors
+            ArduinoErrors = new Dictionary<string, Error>();
+            ArduinoErrors.Add("ServerComErr", new Error("Communication with Arduino TCP Server error"));
+            ArduinoErrors.Add("DHT_No1Err", new Error("Temperature/Humidity sensor error"));
+            #endregion
         }
 
-        public void StartListening()
+        public void StartServer()
         {
             // Establish the local endpoint for the socket.  
             // The DNS name of the computer  
@@ -353,7 +285,7 @@ namespace Home_automation
                 listener.Bind(localEndPoint);
                 listener.Listen(100);
 
-                while (!_stopListening)
+                while (true)
                 {
                     // Set the event to nonsignaled state.  
                     allDone.Reset();
@@ -377,10 +309,6 @@ namespace Home_automation
             Console.WriteLine("\nPress ENTER to continue...");
             Console.Read();
 
-        }
-        public void StopListening()
-        {
-            _stopListening = true;
         }
 
         public void AcceptCallback(IAsyncResult ar)
@@ -414,18 +342,13 @@ namespace Home_automation
             if (bytesRead > 0)
             {
                 // There  might be more data, so store the data received so far.  
-                state.sb.Append(Encoding.ASCII.GetString(
-                    state.buffer, 0, bytesRead));
+                state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, bytesRead));
 
-                // Check for end-of-file tag. If it is not there, read   
-                // more data.  
+                // Check for end-of-file tag. If it is not there, read more data.  
                 content = state.sb.ToString();
                 if (content.IndexOf("<EOF>") > -1)
                 {
-                    // All the data has been read from the   
-                    // client. Display it on the console.  
-                    Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
-                        content.Length, content);
+                    // All the data has been read from the client.
 
                     if (content.Contains("&"))
                     {
@@ -436,8 +359,8 @@ namespace Home_automation
                         }));
                     }
 
-                        // Echo the data back to the client.  
-                        Send(handler, content);
+                    // Echo the data back to the client.  
+                    Send(handler, content);
                 }
                 else
                 {
