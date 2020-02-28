@@ -5,8 +5,9 @@
 // Arduino server MAC address
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 // Arduino server IP address
-IPAddress ip(192, 168, 0, 11);
-IPAddress ip_server(192, 168, 0, 16);
+IPAddress ip(192, 168, 0, 111);
+//IPAddress ip_server(192, 168, 0, 16);
+IPAddress ip_server(192, 168, 0, 100);
 // Arduino server port
 const int port = 11000;
 
