@@ -112,6 +112,7 @@ namespace Home_automation
             }
             
         }
+
     }
 
     //ConnectToArduinoServerBtn.Background = new SolidColorBrush(Color.FromArgb(255, 4, 255, 88));
