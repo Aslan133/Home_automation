@@ -18,6 +18,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Threading;
+using System.Data.Linq;
 
 namespace Home_automation
 {
@@ -26,9 +27,9 @@ namespace Home_automation
     /// </summary>
     public partial class MainWindow : Window
     {
-        //private Arduino _arduino;
-        private ArduinoAsynchronousSocketListener _arduinoAsyncSocketListener;
         
+        private ArduinoAsynchronousSocketListener _arduinoAsyncSocketListener;
+        private DatabaseOperations _database;
 
         public MainWindow()
         {
@@ -38,6 +39,8 @@ namespace Home_automation
             StartServer();
 
             AddErrorCbxUpdateToErrorEvent(_arduinoAsyncSocketListener.ArduinoErrors);
+
+            _database = new DatabaseOperations();
 
             //TcpListener server = new TcpListener(IPAddress.Any, 9999);
 
@@ -54,6 +57,8 @@ namespace Home_automation
         private void ArduinoLedOnBtn_Click(object sender, RoutedEventArgs e)
         {
             _arduinoAsyncSocketListener.NeedLed = true;
+            //_database.UpdateTempHumDbDayTable(DateTime.Now, 3.3f,55.6f);
+            //gg.Text = DateTime.Now.Month.ToString();
         }
         private void ArduinoLedOffBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -112,8 +117,65 @@ namespace Home_automation
             }
             
         }
-
+        
     }
+
+    internal class DatabaseOperations
+    {
+        //C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\
+        private static string _connectionStringRel = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10);
+        private static string _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + _connectionStringRel + "TempHumDay.mdf;Integrated Security=True";
+        public void UpdateTempHumDbDayTable(DateTime time, float temp, float hum)
+        {
+            CheckDayTable();
+
+            Day thisDay = new Day();
+            thisDay.Time = time;
+            thisDay.Temperature = temp;
+            thisDay.Humidity = hum;
+
+            DataContext db = new DataContext(_connectionString);
+            db.GetTable<Day>().InsertOnSubmit(thisDay);
+            db.SubmitChanges();
+        }
+        private void UpdateTempHumDbMonthTable(int day, float avgTemp, float avgHum)
+        {
+
+
+            Month thisMonth = new Month();
+            thisMonth.Day = day;
+            thisMonth.Temperature = avgTemp;
+            thisMonth.Humidity = avgHum;
+
+            DataContext db = new DataContext(_connectionString);
+            db.GetTable<Month>().InsertOnSubmit(thisMonth);
+            db.SubmitChanges();
+        }
+        private void CheckDayTable()
+        {
+            DataContext db = new DataContext(_connectionString);
+
+            if (db.GetTable<Day>().Any())
+            {
+                int day = db.GetTable<Day>().First().Time.Day;
+                float avgTemp = (float)db.GetTable<Day>().Select(s => s.Temperature).Average();
+                float avgHum = (float)db.GetTable<Day>().Select(s => s.Humidity).Average();
+
+                if (DateTime.Now.Day != day)
+                {
+                    UpdateTempHumDbMonthTable(day, avgTemp, avgHum);
+
+                    foreach (var item in db.GetTable<Day>())
+                    {
+                        db.GetTable<Day>().DeleteOnSubmit(item);
+                    }
+                    db.SubmitChanges();
+                }
+            }
+            
+        }
+    }
+
 
     //ConnectToArduinoServerBtn.Background = new SolidColorBrush(Color.FromArgb(255, 4, 255, 88));
 
@@ -168,7 +230,7 @@ namespace Home_automation
         // Received data string.  
         public StringBuilder sb = new StringBuilder();
     }
-    internal class ArduinoAsynchronousSocketListener
+    internal class ArduinoAsynchronousSocketListener : DatabaseOperations
     {
         public Dictionary<string, Error> ArduinoErrors { get; }
         public bool NeedLed { get; set; }
@@ -284,10 +346,13 @@ namespace Home_automation
                             _humLabel.Content = content.Split('&')[1].Split('<')[0] + " %";
                         }));
 
-                        double _temp;
-                        if (double.TryParse(content.Split('&')[0].Replace('.', ','), out _temp))
+                        float temp;
+                        float hum;
+                        if (float.TryParse(content.Split('&')[0].Replace('.', ','), out temp) &&
+                            float.TryParse(content.Split('&')[1].Replace('.', ','), out hum))
                         {
                             ArduinoErrors["DHT_No1Err"].IsActive = false;
+                            UpdateTempHumDbDayTable(DateTime.Now, temp, hum);
                         }
                         else
                         {

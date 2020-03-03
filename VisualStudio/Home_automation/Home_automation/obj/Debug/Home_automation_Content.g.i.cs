@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-[assembly: System.Windows.Resources.AssemblyAssociatedContentFileAttribute("temphum.mdf")]
-[assembly: System.Windows.Resources.AssemblyAssociatedContentFileAttribute("temphum_log.ldf")]
+[assembly: System.Windows.Resources.AssemblyAssociatedContentFileAttribute("temphumday.mdf")]
+[assembly: System.Windows.Resources.AssemblyAssociatedContentFileAttribute("temphumday_log.ldf")]
 
 
