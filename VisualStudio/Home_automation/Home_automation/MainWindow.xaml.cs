@@ -410,7 +410,7 @@ namespace Home_automation
                         float temp;
                         float hum;
                         if (float.TryParse(content.Split('&')[0].Replace('.', ','), out temp) &&
-                            float.TryParse(content.Split('&')[1].Replace('.', ','), out hum))
+                            float.TryParse(content.Split('&')[1].Split('<')[0].Replace('.', ','), out hum))
                         {
                             ArduinoErrors["DHT_No1Err"].IsActive = false;
                             UpdateTempHumDbDayTable(DateTime.Now, temp, hum);
