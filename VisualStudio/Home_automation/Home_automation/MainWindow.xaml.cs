@@ -21,6 +21,7 @@ using System.Windows.Threading;
 using System.Data.Linq;
 using System.Data.Sql;
 using System.Data.SqlClient;
+using System.Data;
 
 namespace Home_automation
 {
@@ -61,9 +62,11 @@ namespace Home_automation
             _arduinoAsyncSocketListener.NeedLed = true;
             //_database.UpdateTempHumDbDayTable(DateTime.Now, 3.3f,55.6f);
             DateTime dt = DateTime.Now;
-            
-            _database.CreateNewTempHumDayTable(dt);
+
+            //_database.CreateNewTempHumDayTable(dt);
             //gg.Text = DateTime.Now.Month.ToString();
+
+
         }
         private void ArduinoLedOffBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -120,19 +123,16 @@ namespace Home_automation
                     err.Value.ErrorStateChanged += RefreshErrorCombobox;
                 }
             }
-            
         }
-        
     }
 
     internal class DatabaseOperations
     {
-        //C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\
         private static string _connectionStringRel = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10);
         private static string _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + _connectionStringRel + "TempHumDay.mdf;Integrated Security=True";
         public void UpdateTempHumDbDayTable(DateTime time, float temp, float hum)
         {
-            //CheckDayTable();
+            CheckTempHumDayTable();
 
             Today thisDay = new Today();
             thisDay.Time = time;
@@ -143,21 +143,8 @@ namespace Home_automation
             db.GetTable<Today>().InsertOnSubmit(thisDay);
             db.SubmitChanges();
         }
-        /*
-        private void UpdateTempHumDbMonthTable(int day, float avgTemp, float avgHum)
-        {
 
-
-            Month thisMonth = new Month();
-            thisMonth.Day = day;
-            thisMonth.Temperature = avgTemp;
-            thisMonth.Humidity = avgHum;
-
-            DataContext db = new DataContext(_connectionString);
-            db.GetTable<Month>().InsertOnSubmit(thisMonth);
-            db.SubmitChanges();
-        }
-        */
+        //avg
         /*
         private void CheckDayTable()
         {
@@ -184,31 +171,68 @@ namespace Home_automation
             
         }
         */
-        public void CreateNewTempHumDayTable(DateTime date)
+        private void CheckTempHumDayTable()
         {
-            string tableName = date.Year.ToString() + "_" + date.Month.ToString() + "_" + date.Day.ToString();
+            DataContext db = new DataContext(_connectionString);
 
-            using (SqlConnection con = new SqlConnection(_connectionString))
+            if (db.GetTable<Today>().Any())
             {
+                DateTime date = db.GetTable<Today>().First().Time;
 
-                try
+                if (DateTime.Now.Day != date.Day)
                 {
-                    con.Open();
+                    string tableName = 
+                        "Data_" 
+                        + date.Year.ToString() + "_" + date.Month.ToString() + "_" + date.Day.ToString();
 
-                    var commandStr = "IF NOT EXISTS (select name from sysobjects where name = 'Todayx1') CREATE TABLE[dbo].[Todayx1]([Id] INT IDENTITY(1, 1) NOT NULL, [Time] DATETIME NOT NULL, [Temperature] FLOAT(53) NOT NULL, [Humidity] FLOAT(53) NOT NULL, PRIMARY KEY CLUSTERED([Id] ASC));";
-                        //"CREATE  TABLE " + tableName + "(Id INT  NOT NULL, Time DATETIME NOT NULL, Temperature FLOAT (53) NOT NULL, Humidity FLOAT (53) NOT NULL)";
-
-                    using (SqlCommand command = new SqlCommand(commandStr, con))
+                    using (SqlConnection con = new SqlConnection(_connectionString))
                     {
-                        command.ExecuteNonQuery();
-                    }
-                    con.Close();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
+                        try
+                        {
+                            con.Open();
 
+                            var commandStr = "IF NOT EXISTS (select name from sysobjects where name = '" + tableName + "') CREATE TABLE[dbo].[" + tableName + "]([Id] INT IDENTITY(1, 1) NOT NULL, [Time] DATETIME NOT NULL, [Temperature] FLOAT(53) NOT NULL, [Humidity] FLOAT(53) NOT NULL, PRIMARY KEY CLUSTERED([Id] ASC));";
+
+                            using (SqlCommand command = new SqlCommand(commandStr, con))
+                            {
+                                command.ExecuteNonQuery();
+                            }
+                            con.Close();
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(ex.Message);
+                        }
+                    }
+                    try
+                    {
+                        SqlConnection Con = new SqlConnection(_connectionString);
+
+                        foreach (var item in db.GetTable<Today>())
+                        {
+                            SqlCommand Cmd = new SqlCommand(
+                                "INSERT INTO " + tableName +
+                                "(Time, Temperature, Humidity) " +
+                                "VALUES('"
+                                + item.Time +"', "
+                                + item.Temperature.ToString().Replace(',','.') +", "
+                                + item.Humidity.ToString().Replace(',', '.') + ")", Con);
+                            
+                            Con.Open();
+                            Cmd.ExecuteNonQuery();
+                            Con.Close();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
+                    foreach (var item in db.GetTable<Today>())
+                    {
+                        db.GetTable<Today>().DeleteOnSubmit(item);
+                    }
+                    db.SubmitChanges();
+                }
             }
         }
     }
