@@ -71,10 +71,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="TempHumDataClasses1.designer.cs">
+    <Compile Include="TempDataClasses1.designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>TempHumDataClasses1.dbml</DependentUpon>
+      <DependentUpon>TempDataClasses1.dbml</DependentUpon>
     </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -111,13 +111,13 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <None Include="TempHumDataClasses1.dbml">
+    <None Include="TempDataClasses1.dbml">
       <Generator>MSLinqToSQLGenerator</Generator>
-      <LastGenOutput>TempHumDataClasses1.designer.cs</LastGenOutput>
+      <LastGenOutput>TempDataClasses1.designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </None>
-    <None Include="TempHumDataClasses1.dbml.layout">
-      <DependentUpon>TempHumDataClasses1.dbml</DependentUpon>
+    <None Include="TempDataClasses1.dbml.layout">
+      <DependentUpon>TempDataClasses1.dbml</DependentUpon>
     </None>
   </ItemGroup>
   <ItemGroup>

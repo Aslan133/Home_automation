@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Database Name="TempHumDay" Class="TempDataClasses1DataContext" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Connection Mode="AppSettings" ConnectionString="Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=|DataDirectory|\TempHumDay.mdf;Integrated Security=True" SettingsObjectName="Home_automation.Properties.Settings" SettingsPropertyName="TempHumDayConnectionString" Provider="System.Data.SqlClient" />
+  <Table Name="dbo.Today" Member="Todays">
+    <Type Name="Today">
+      <Column Name="Id" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="Time" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="Temperature" Type="System.Double" DbType="Float NOT NULL" CanBeNull="false" />
+      <Column Name="Humidity" Type="System.Double" DbType="Float NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+</Database>

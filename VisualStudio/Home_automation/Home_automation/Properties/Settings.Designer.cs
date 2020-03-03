@@ -33,5 +33,16 @@ namespace Home_automation.Properties {
                 return ((string)(this["TempHumConnectionString"]));
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.SpecialSettingAttribute(global::System.Configuration.SpecialSetting.ConnectionString)]
+        [global::System.Configuration.DefaultSettingValueAttribute("Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename=|DataDirectory|\\TempHumDay.md" +
+            "f;Integrated Security=True")]
+        public string TempHumDayConnectionString {
+            get {
+                return ((string)(this["TempHumDayConnectionString"]));
+            }
+        }
     }
 }

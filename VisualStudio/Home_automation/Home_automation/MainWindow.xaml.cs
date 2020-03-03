@@ -19,6 +19,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows.Threading;
 using System.Data.Linq;
+using System.Data.Sql;
+using System.Data.SqlClient;
 
 namespace Home_automation
 {
@@ -58,6 +60,9 @@ namespace Home_automation
         {
             _arduinoAsyncSocketListener.NeedLed = true;
             //_database.UpdateTempHumDbDayTable(DateTime.Now, 3.3f,55.6f);
+            DateTime dt = DateTime.Now;
+            
+            _database.CreateNewTempHumDayTable(dt);
             //gg.Text = DateTime.Now.Month.ToString();
         }
         private void ArduinoLedOffBtn_Click(object sender, RoutedEventArgs e)
@@ -127,17 +132,18 @@ namespace Home_automation
         private static string _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + _connectionStringRel + "TempHumDay.mdf;Integrated Security=True";
         public void UpdateTempHumDbDayTable(DateTime time, float temp, float hum)
         {
-            CheckDayTable();
+            //CheckDayTable();
 
-            Day thisDay = new Day();
+            Today thisDay = new Today();
             thisDay.Time = time;
             thisDay.Temperature = temp;
             thisDay.Humidity = hum;
 
             DataContext db = new DataContext(_connectionString);
-            db.GetTable<Day>().InsertOnSubmit(thisDay);
+            db.GetTable<Today>().InsertOnSubmit(thisDay);
             db.SubmitChanges();
         }
+        /*
         private void UpdateTempHumDbMonthTable(int day, float avgTemp, float avgHum)
         {
 
@@ -151,28 +157,59 @@ namespace Home_automation
             db.GetTable<Month>().InsertOnSubmit(thisMonth);
             db.SubmitChanges();
         }
+        */
+        /*
         private void CheckDayTable()
         {
             DataContext db = new DataContext(_connectionString);
 
-            if (db.GetTable<Day>().Any())
+            if (db.GetTable<Today>().Any())
             {
-                int day = db.GetTable<Day>().First().Time.Day;
-                float avgTemp = (float)db.GetTable<Day>().Select(s => s.Temperature).Average();
-                float avgHum = (float)db.GetTable<Day>().Select(s => s.Humidity).Average();
+                int day = db.GetTable<Today>().First().Time.Day;
+                float avgTemp = (float)db.GetTable<Today>().Select(s => s.Temperature).Average();
+                float avgHum = (float)db.GetTable<Today>().Select(s => s.Humidity).Average();
 
                 if (DateTime.Now.Day != day)
                 {
+
                     UpdateTempHumDbMonthTable(day, avgTemp, avgHum);
 
-                    foreach (var item in db.GetTable<Day>())
+                    foreach (var item in db.GetTable<Today>())
                     {
-                        db.GetTable<Day>().DeleteOnSubmit(item);
+                        db.GetTable<Today>().DeleteOnSubmit(item);
                     }
                     db.SubmitChanges();
                 }
             }
             
+        }
+        */
+        public void CreateNewTempHumDayTable(DateTime date)
+        {
+            string tableName = date.Year.ToString() + "_" + date.Month.ToString() + "_" + date.Day.ToString();
+
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+
+                try
+                {
+                    con.Open();
+
+                    var commandStr = "IF NOT EXISTS (select name from sysobjects where name = 'Todayx1') CREATE TABLE[dbo].[Todayx1]([Id] INT IDENTITY(1, 1) NOT NULL, [Time] DATETIME NOT NULL, [Temperature] FLOAT(53) NOT NULL, [Humidity] FLOAT(53) NOT NULL, PRIMARY KEY CLUSTERED([Id] ASC));";
+                        //"CREATE  TABLE " + tableName + "(Id INT  NOT NULL, Time DATETIME NOT NULL, Temperature FLOAT (53) NOT NULL, Humidity FLOAT (53) NOT NULL)";
+
+                    using (SqlCommand command = new SqlCommand(commandStr, con))
+                    {
+                        command.ExecuteNonQuery();
+                    }
+                    con.Close();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+
+            }
         }
     }
 
