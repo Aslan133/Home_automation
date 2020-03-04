@@ -2,10 +2,8 @@
 .
 .
 SQL dalis:
-1. Surasymas i duombaze: DayTempHum
+1. surasymas i excel - rusiavima padaryti
 2. Atvaizdavimas: leisti isskleisti pagal laiko ribas
-3. Surasyti dienu vid temp hum i MonthTempHum
-4. atvaizdavimas toks pat
 .
 .
 .

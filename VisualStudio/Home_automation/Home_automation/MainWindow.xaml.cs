@@ -22,6 +22,7 @@ using System.Data.Linq;
 using System.Data.Sql;
 using System.Data.SqlClient;
 using System.Data;
+using Excel = Microsoft.Office.Interop.Excel;
 
 namespace Home_automation
 {
@@ -61,12 +62,23 @@ namespace Home_automation
         {
             _arduinoAsyncSocketListener.NeedLed = true;
             //_database.UpdateTempHumDbDayTable(DateTime.Now, 3.3f,55.6f);
-            DateTime dt = DateTime.Now;
+            //DateTime dt = DateTime.Now;
 
             //_database.CreateNewTempHumDayTable(dt);
-            //gg.Text = DateTime.Now.Month.ToString();
+            //gg.Text = _database.ff().Rows.Count.ToString();
 
+            //for (int i = 0; i < _database.GetTableList().Rows.Count; i++)
+            //{
+            //    if (_database.GetTableList().Rows[i][2].ToString() != "Today")
+            //    {
+            //        gg.Text += _database.GetTableList().Rows[i][2].ToString().Split('_')[2];
+            //    }
 
+            //}
+
+            //_database.ff().Rows[2][2].ToString();
+            //gg.Text += _database.GetTableList().Rows[0][2].ToString();
+            _database.FillExcel("Data_2020_3_3");
         }
         private void ArduinoLedOffBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -146,30 +158,8 @@ namespace Home_automation
 
         //avg
         /*
-        private void CheckDayTable()
-        {
-            DataContext db = new DataContext(_connectionString);
-
-            if (db.GetTable<Today>().Any())
-            {
-                int day = db.GetTable<Today>().First().Time.Day;
-                float avgTemp = (float)db.GetTable<Today>().Select(s => s.Temperature).Average();
-                float avgHum = (float)db.GetTable<Today>().Select(s => s.Humidity).Average();
-
-                if (DateTime.Now.Day != day)
-                {
-
-                    UpdateTempHumDbMonthTable(day, avgTemp, avgHum);
-
-                    foreach (var item in db.GetTable<Today>())
-                    {
-                        db.GetTable<Today>().DeleteOnSubmit(item);
-                    }
-                    db.SubmitChanges();
-                }
-            }
-            
-        }
+        float avgTemp = (float)db.GetTable<Today>().Select(s => s.Temperature).Average();
+        float avgHum = (float)db.GetTable<Today>().Select(s => s.Humidity).Average();
         */
         private void CheckTempHumDayTable()
         {
@@ -181,8 +171,60 @@ namespace Home_automation
 
                 if (DateTime.Now.Day != date.Day)
                 {
-                    string tableName = 
-                        "Data_" 
+                    //check last record, if its number exceeds limit(3 months) - save last to excel
+                    DataTable tables = GetTableList();
+
+                    bool needToFillExcel = false;
+                    string firstSheetName = "";
+                    bool haveFirstSheetName = false;
+
+                    for (int i = 0; i < tables.Rows.Count; i++)
+                    {
+                        if (tables.Rows[i][2].ToString() != "Today")
+                        {
+                            if (DateTime.Now.Year == Convert.ToInt32(tables.Rows[i][2].ToString().Split('_')[1]))
+                            {
+                                if ((DateTime.Now.Month - Convert.ToInt32(tables.Rows[i][2].ToString().Split('_')[2])) >= 3)
+                                {
+                                    needToFillExcel = true;
+                                    if (!haveFirstSheetName)
+                                    {
+                                        firstSheetName = tables.Rows[i][2].ToString();
+                                        haveFirstSheetName = true;
+                                    }
+
+                                }
+                            }
+                            else
+                            {
+                                if ((Convert.ToInt32(tables.Rows[i][2].ToString().Split('_')[2]) - DateTime.Now.Month) <= 9)
+                                {
+                                    needToFillExcel = true;
+
+                                    if (!haveFirstSheetName)
+                                    {
+                                        firstSheetName = tables.Rows[i][2].ToString();
+                                        haveFirstSheetName = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (needToFillExcel)
+                    {
+                        FillExcel(firstSheetName);
+
+                        needToFillExcel = false;
+                        haveFirstSheetName = false;
+                        firstSheetName = "";
+                    }
+
+
+
+                    //create new day table
+
+                    string tableName =
+                        "Data_"
                         + date.Year.ToString() + "_" + date.Month.ToString() + "_" + date.Day.ToString();
 
                     using (SqlConnection con = new SqlConnection(_connectionString))
@@ -191,7 +233,12 @@ namespace Home_automation
                         {
                             con.Open();
 
-                            var commandStr = "IF NOT EXISTS (select name from sysobjects where name = '" + tableName + "') CREATE TABLE[dbo].[" + tableName + "]([Id] INT IDENTITY(1, 1) NOT NULL, [Time] DATETIME NOT NULL, [Temperature] FLOAT(53) NOT NULL, [Humidity] FLOAT(53) NOT NULL, PRIMARY KEY CLUSTERED([Id] ASC));";
+                            var commandStr = "IF NOT EXISTS (select name from sysobjects where name = '" + tableName + "') CREATE TABLE[dbo].[" + tableName + "]" +
+                                "([Id] INT IDENTITY(1, 1) NOT NULL, " +
+                                "[Time] DATETIME NOT NULL, " +
+                                "[Temperature] FLOAT(53) NOT NULL, " +
+                                "[Humidity] FLOAT(53) NOT NULL, " +
+                                "PRIMARY KEY CLUSTERED([Id] ASC));";
 
                             using (SqlCommand command = new SqlCommand(commandStr, con))
                             {
@@ -214,10 +261,10 @@ namespace Home_automation
                                 "INSERT INTO " + tableName +
                                 "(Time, Temperature, Humidity) " +
                                 "VALUES('"
-                                + item.Time +"', "
-                                + item.Temperature.ToString().Replace(',','.') +", "
+                                + item.Time + "', "
+                                + item.Temperature.ToString().Replace(',', '.') + ", "
                                 + item.Humidity.ToString().Replace(',', '.') + ")", Con);
-                            
+
                             Con.Open();
                             Cmd.ExecuteNonQuery();
                             Con.Close();
@@ -232,6 +279,185 @@ namespace Home_automation
                         db.GetTable<Today>().DeleteOnSubmit(item);
                     }
                     db.SubmitChanges();
+                }
+            }
+        }
+        public DataTable GetTableList()
+        {
+            DataTable gg;
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                gg = conn.GetSchema("Tables");
+                conn.Close();
+            }
+            return gg;
+        }
+        public void FillExcel(string firstSheetName)
+        {
+            string fileName = firstSheetName.Split('_')[0] + "_" + firstSheetName.Split('_')[1] + "_" + firstSheetName.Split('_')[2];
+            string excelPath = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10) + @"TempHumData\" + fileName + ".xls";
+
+            Excel.Application xlApp = new Excel.Application();
+
+            if (xlApp != null)
+            {
+                object misValue = System.Reflection.Missing.Value;
+                Excel.Workbook xlWorkBook = xlApp.Workbooks.Add(misValue);
+
+                var xlSheets = xlWorkBook.Sheets as Excel.Sheets;
+                var xlNewSheet = (Excel.Worksheet)xlSheets.Add(After: xlWorkBook.Sheets[xlWorkBook.Sheets.Count]);
+                xlNewSheet.Name = firstSheetName;
+
+                xlWorkBook.Sheets["Sheet1"].Delete();
+                xlWorkBook.Sheets["Sheet2"].Delete();
+                xlWorkBook.Sheets["Sheet3"].Delete();
+
+                DataTable tables = GetTableList();
+
+                for (int i = 0; i < tables.Rows.Count; i++)
+                {
+                    if (tables.Rows[i][2].ToString() != "Today")
+                    {
+                        var nameParts = tables.Rows[i][2].ToString().Split('_');
+
+                        string tableMonth = nameParts[0] + "_" + nameParts[1] + "_" + nameParts[2];
+
+                        if (tableMonth == fileName)
+                        {
+
+                            List<DateTime> time = new List<DateTime>();
+                            List<float> temperature = new List<float>();
+                            List<float> humidity = new List<float>();
+
+                            GetTableData(tables.Rows[i][2].ToString(), ref time, ref temperature, ref humidity);
+
+                            if (xlNewSheet.Name == tables.Rows[i][2].ToString())
+                            {
+                                
+                                Excel.Range xlRange = xlNewSheet.UsedRange;
+                                int cols = xlRange.Columns.Count;
+                                int rows = xlRange.Rows.Count;
+
+                                xlNewSheet.Cells[rows, 1].value2 = "Time";
+                                xlNewSheet.Cells[rows, 2].value2 = "Temperature";
+                                xlNewSheet.Cells[rows, 3].value2 = "Humidity";
+
+                                var columnHeadingsRange = xlNewSheet.Range[xlNewSheet.Cells[1, 1], xlNewSheet.Cells[1, 3]];
+                                columnHeadingsRange.Interior.Color = Excel.XlRgbColor.rgbYellow;
+                                xlNewSheet.Cells[rows, 1].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                                xlNewSheet.Cells[rows, 1].Font.Bold = true;
+                                xlNewSheet.Cells[rows, 2].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                                xlNewSheet.Cells[rows, 2].Font.Bold = true;
+                                xlNewSheet.Cells[rows, 3].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                                xlNewSheet.Cells[rows, 3].Font.Bold = true;
+                                columnHeadingsRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+                                columnHeadingsRange.Borders.Weight = Excel.XlBorderWeight.xlThin;
+
+                                for (int j = 0; j < time.Count; j++)
+                                {
+                                    xlNewSheet.Cells[rows + j + 1, 1].value2 = time[j].ToString() + ":" + time[j].Second.ToString();
+                                    xlNewSheet.Cells[rows + j + 1, 2].value2 = Math.Round(temperature[j],1);
+                                    xlNewSheet.Cells[rows + j + 1, 3].value2 = Math.Round(humidity[j], 1);
+                                }
+                                xlNewSheet.Columns.AutoFit();
+                            }
+                            else
+                            {
+                                var xlNewSheet2 = (Excel.Worksheet)xlSheets.Add(After: xlWorkBook.Sheets[xlWorkBook.Sheets.Count]);
+                                xlNewSheet2.Name = tables.Rows[i][2].ToString();
+
+                                Excel.Range xlRange = xlNewSheet2.UsedRange;
+                                int cols = xlRange.Columns.Count;
+                                int rows = xlRange.Rows.Count;
+
+                                xlNewSheet2.Cells[rows, 1].value2 = "Time";
+                                xlNewSheet2.Cells[rows, 2].value2 = "Temperature";
+                                xlNewSheet2.Cells[rows, 3].value2 = "Humidity";
+
+                                var columnHeadingsRange = xlNewSheet2.Range[xlNewSheet2.Cells[1, 1], xlNewSheet2.Cells[1, 3]];
+                                columnHeadingsRange.Interior.Color = Excel.XlRgbColor.rgbYellow;
+                                xlNewSheet2.Cells[rows, 1].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                                xlNewSheet2.Cells[rows, 1].Font.Bold = true;
+                                xlNewSheet2.Cells[rows, 2].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                                xlNewSheet2.Cells[rows, 2].Font.Bold = true;
+                                xlNewSheet2.Cells[rows, 3].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                                xlNewSheet2.Cells[rows, 3].Font.Bold = true;
+                                columnHeadingsRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+                                columnHeadingsRange.Borders.Weight = Excel.XlBorderWeight.xlThin;
+
+                                for (int j = 0; j < time.Count; j++)
+                                {
+                                    xlNewSheet2.Cells[rows + j + 1, 1].value2 = time[j].ToString() + ":" + time[j].Second.ToString();
+                                    xlNewSheet2.Cells[rows + j + 1, 2].value2 = Math.Round(temperature[j], 1);
+                                    xlNewSheet2.Cells[rows + j + 1, 3].value2 = Math.Round(humidity[j],1);
+                                }
+                                xlNewSheet2.Columns.AutoFit();
+                            }
+                            DeleteTable(tables.Rows[i][2].ToString());
+
+                        }
+                    }
+                }
+
+
+
+
+                xlWorkBook.SaveAs(excelPath, Excel.XlFileFormat.xlWorkbookNormal, misValue, misValue, misValue, misValue, Excel.XlSaveAsAccessMode.xlExclusive, misValue, misValue, misValue, misValue, misValue); ;
+                xlWorkBook.Close(true, misValue, misValue);
+                xlApp.Quit();
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(xlApp);
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(xlWorkBook);
+            }
+        }
+        private void GetTableData(string tableName, ref List<DateTime> time, ref List<float> temp, ref List<float> hum)
+        {
+
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                try
+                {
+                    string querry = "SELECT * FROM " + tableName;
+
+                    using (SqlCommand command = new SqlCommand(querry, con))
+                    {
+                        con.Open();
+                        var reader = command.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            time.Add(Convert.ToDateTime(reader["Time"].ToString()));
+                            temp.Add(float.Parse(reader["Temperature"].ToString()));
+                            hum.Add(float.Parse(reader["Humidity"].ToString()));
+                        }
+                    }
+                    con.Close();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+        private void DeleteTable(string tableName)
+        {
+
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                try
+                {
+                    string querry = "DROP TABLE " + tableName;
+
+                    using (SqlCommand command = new SqlCommand(querry, con))
+                    {
+                        con.Open();
+
+                        command.ExecuteNonQuery();
+                    }
+                    con.Close();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
                 }
             }
         }
