@@ -39,7 +39,6 @@ namespace Home_automation
         private ArduinoAsynchronousSocketListener _arduinoAsyncSocketListener;
         private DatabaseOperations _database;
 
-        public static bool kaka;
 
         private Monitor _monitor;
         private Graph _graph;
