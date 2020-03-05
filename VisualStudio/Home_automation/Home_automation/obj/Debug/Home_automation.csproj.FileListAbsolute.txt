@@ -31,3 +31,9 @@ C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\
 C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\TempHumDay.mdf
 C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\TempHumDay_log.ldf
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.csproj.ResolveComReference.cache
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Graph.g.cs
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Monitor.g.cs
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Graph.baml
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Monitor.baml
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Errors.g.cs
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Errors.baml

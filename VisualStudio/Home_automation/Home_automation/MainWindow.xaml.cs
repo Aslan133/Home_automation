@@ -29,17 +29,35 @@ namespace Home_automation
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
+    /// 
+
+
     public partial class MainWindow : Window
     {
         
+
         private ArduinoAsynchronousSocketListener _arduinoAsyncSocketListener;
         private DatabaseOperations _database;
+
+        public static bool kaka;
+
+        private Monitor _monitor;
+        private Graph _graph;
+        private Errors _errors;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            _arduinoAsyncSocketListener = new ArduinoAsynchronousSocketListener(ref TempLbl, ref HumLbl);
+            _monitor = new Monitor();
+            _graph = new Graph();
+            _errors = new Errors();
+
+            Main.Content = _monitor;
+
+
+
+            _arduinoAsyncSocketListener = new ArduinoAsynchronousSocketListener(ref _monitor.TempLbl, ref _monitor.HumLbl);
             StartServer();
 
             AddErrorCbxUpdateToErrorEvent(_arduinoAsyncSocketListener.ArduinoErrors);
@@ -78,7 +96,8 @@ namespace Home_automation
 
             //_database.ff().Rows[2][2].ToString();
             //gg.Text += _database.GetTableList().Rows[0][2].ToString();
-            _database.FillExcel("Data_2020_3_3");
+            //_database.FillExcel("Data_2020_2_1");
+            //_database.createtable(gg.Text);
         }
         private void ArduinoLedOffBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -122,8 +141,16 @@ namespace Home_automation
         {
             Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
             {
-                ErrorMessageCbx.ItemsSource = null;
-                ErrorMessageCbx.ItemsSource = ActiveErrors(_arduinoAsyncSocketListener.ArduinoErrors);
+                _errors.ErrosTableLB.ItemsSource = null;
+                _errors.ErrosTableLB.ItemsSource = ActiveErrors(_arduinoAsyncSocketListener.ArduinoErrors);
+
+                if (_errors.ErrosTableLB.Items.Count > 0)
+                {
+                    ErrorsNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 252, 3, 44));
+                } else
+                {
+                    ErrorsNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 221, 221, 221));
+                }
             }));
         }
         private void AddErrorCbxUpdateToErrorEvent(params Dictionary<string, Error>[] errors)
@@ -135,6 +162,26 @@ namespace Home_automation
                     err.Value.ErrorStateChanged += RefreshErrorCombobox;
                 }
             }
+        }
+
+        private void TempHumGraphNavBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void MainNavBtn_Click(object sender, RoutedEventArgs e)
+        {
+            Main.Content = _monitor;
+        }
+
+        private void GraphNavBtn_Click(object sender, RoutedEventArgs e)
+        {
+            Main.Content = _graph;
+        }
+
+        private void ErrorsNavBtn_Click(object sender, RoutedEventArgs e)
+        {
+            Main.Content = _errors;
         }
     }
 
@@ -282,6 +329,34 @@ namespace Home_automation
                 }
             }
         }
+        public void createtable(string name)
+        {
+
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                try
+                {
+                    con.Open();
+
+                    var commandStr = "IF NOT EXISTS (select name from sysobjects where name = '" + name + "') CREATE TABLE[dbo].[" + name + "]" +
+                        "([Id] INT IDENTITY(1, 1) NOT NULL, " +
+                        "[Time] DATETIME NOT NULL, " +
+                        "[Temperature] FLOAT(53) NOT NULL, " +
+                        "[Humidity] FLOAT(53) NOT NULL, " +
+                        "PRIMARY KEY CLUSTERED([Id] ASC));";
+
+                    using (SqlCommand command = new SqlCommand(commandStr, con))
+                    {
+                        command.ExecuteNonQuery();
+                    }
+                    con.Close();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
         public DataTable GetTableList()
         {
             DataTable gg;
@@ -314,6 +389,7 @@ namespace Home_automation
                 xlWorkBook.Sheets["Sheet3"].Delete();
 
                 DataTable tables = GetTableList();
+                Dictionary<int, string> tableNamesDict = new Dictionary<int, string>();
 
                 for (int i = 0; i < tables.Rows.Count; i++)
                 {
@@ -325,83 +401,87 @@ namespace Home_automation
 
                         if (tableMonth == fileName)
                         {
-
-                            List<DateTime> time = new List<DateTime>();
-                            List<float> temperature = new List<float>();
-                            List<float> humidity = new List<float>();
-
-                            GetTableData(tables.Rows[i][2].ToString(), ref time, ref temperature, ref humidity);
-
-                            if (xlNewSheet.Name == tables.Rows[i][2].ToString())
-                            {
-                                
-                                Excel.Range xlRange = xlNewSheet.UsedRange;
-                                int cols = xlRange.Columns.Count;
-                                int rows = xlRange.Rows.Count;
-
-                                xlNewSheet.Cells[rows, 1].value2 = "Time";
-                                xlNewSheet.Cells[rows, 2].value2 = "Temperature";
-                                xlNewSheet.Cells[rows, 3].value2 = "Humidity";
-
-                                var columnHeadingsRange = xlNewSheet.Range[xlNewSheet.Cells[1, 1], xlNewSheet.Cells[1, 3]];
-                                columnHeadingsRange.Interior.Color = Excel.XlRgbColor.rgbYellow;
-                                xlNewSheet.Cells[rows, 1].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
-                                xlNewSheet.Cells[rows, 1].Font.Bold = true;
-                                xlNewSheet.Cells[rows, 2].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
-                                xlNewSheet.Cells[rows, 2].Font.Bold = true;
-                                xlNewSheet.Cells[rows, 3].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
-                                xlNewSheet.Cells[rows, 3].Font.Bold = true;
-                                columnHeadingsRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
-                                columnHeadingsRange.Borders.Weight = Excel.XlBorderWeight.xlThin;
-
-                                for (int j = 0; j < time.Count; j++)
-                                {
-                                    xlNewSheet.Cells[rows + j + 1, 1].value2 = time[j].ToString() + ":" + time[j].Second.ToString();
-                                    xlNewSheet.Cells[rows + j + 1, 2].value2 = Math.Round(temperature[j],1);
-                                    xlNewSheet.Cells[rows + j + 1, 3].value2 = Math.Round(humidity[j], 1);
-                                }
-                                xlNewSheet.Columns.AutoFit();
-                            }
-                            else
-                            {
-                                var xlNewSheet2 = (Excel.Worksheet)xlSheets.Add(After: xlWorkBook.Sheets[xlWorkBook.Sheets.Count]);
-                                xlNewSheet2.Name = tables.Rows[i][2].ToString();
-
-                                Excel.Range xlRange = xlNewSheet2.UsedRange;
-                                int cols = xlRange.Columns.Count;
-                                int rows = xlRange.Rows.Count;
-
-                                xlNewSheet2.Cells[rows, 1].value2 = "Time";
-                                xlNewSheet2.Cells[rows, 2].value2 = "Temperature";
-                                xlNewSheet2.Cells[rows, 3].value2 = "Humidity";
-
-                                var columnHeadingsRange = xlNewSheet2.Range[xlNewSheet2.Cells[1, 1], xlNewSheet2.Cells[1, 3]];
-                                columnHeadingsRange.Interior.Color = Excel.XlRgbColor.rgbYellow;
-                                xlNewSheet2.Cells[rows, 1].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
-                                xlNewSheet2.Cells[rows, 1].Font.Bold = true;
-                                xlNewSheet2.Cells[rows, 2].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
-                                xlNewSheet2.Cells[rows, 2].Font.Bold = true;
-                                xlNewSheet2.Cells[rows, 3].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
-                                xlNewSheet2.Cells[rows, 3].Font.Bold = true;
-                                columnHeadingsRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
-                                columnHeadingsRange.Borders.Weight = Excel.XlBorderWeight.xlThin;
-
-                                for (int j = 0; j < time.Count; j++)
-                                {
-                                    xlNewSheet2.Cells[rows + j + 1, 1].value2 = time[j].ToString() + ":" + time[j].Second.ToString();
-                                    xlNewSheet2.Cells[rows + j + 1, 2].value2 = Math.Round(temperature[j], 1);
-                                    xlNewSheet2.Cells[rows + j + 1, 3].value2 = Math.Round(humidity[j],1);
-                                }
-                                xlNewSheet2.Columns.AutoFit();
-                            }
-                            DeleteTable(tables.Rows[i][2].ToString());
-
+                            tableNamesDict.Add(Convert.ToInt32(nameParts[3]), tables.Rows[i][2].ToString());
                         }
                     }
                 }
 
+                List<int> daysList = tableNamesDict.Keys.ToList();
+                daysList.Sort();
 
 
+                foreach (var day in daysList)
+                {
+                    List<DateTime> time = new List<DateTime>();
+                    List<float> temperature = new List<float>();
+                    List<float> humidity = new List<float>();
+
+                    GetTableData(tableNamesDict[day], ref time, ref temperature, ref humidity);
+
+                    if (xlNewSheet.Name == tableNamesDict[day])
+                    {
+
+                        Excel.Range xlRange = xlNewSheet.UsedRange;
+                        int cols = xlRange.Columns.Count;
+                        int rows = xlRange.Rows.Count;
+
+                        xlNewSheet.Cells[rows, 1].value2 = "Time";
+                        xlNewSheet.Cells[rows, 2].value2 = "Temperature";
+                        xlNewSheet.Cells[rows, 3].value2 = "Humidity";
+
+                        var columnHeadingsRange = xlNewSheet.Range[xlNewSheet.Cells[1, 1], xlNewSheet.Cells[1, 3]];
+                        columnHeadingsRange.Interior.Color = Excel.XlRgbColor.rgbYellow;
+                        xlNewSheet.Cells[rows, 1].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                        xlNewSheet.Cells[rows, 1].Font.Bold = true;
+                        xlNewSheet.Cells[rows, 2].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                        xlNewSheet.Cells[rows, 2].Font.Bold = true;
+                        xlNewSheet.Cells[rows, 3].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                        xlNewSheet.Cells[rows, 3].Font.Bold = true;
+                        columnHeadingsRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+                        columnHeadingsRange.Borders.Weight = Excel.XlBorderWeight.xlThin;
+
+                        for (int j = 0; j < time.Count; j++)
+                        {
+                            xlNewSheet.Cells[rows + j + 1, 1].value2 = time[j].ToString() + ":" + time[j].Second.ToString();
+                            xlNewSheet.Cells[rows + j + 1, 2].value2 = Math.Round(temperature[j], 1);
+                            xlNewSheet.Cells[rows + j + 1, 3].value2 = Math.Round(humidity[j], 1);
+                        }
+                        xlNewSheet.Columns.AutoFit();
+                    }
+                    else
+                    {
+                        var xlNewSheet2 = (Excel.Worksheet)xlSheets.Add(After: xlWorkBook.Sheets[xlWorkBook.Sheets.Count]);
+                        xlNewSheet2.Name = tableNamesDict[day];
+
+                        Excel.Range xlRange = xlNewSheet2.UsedRange;
+                        int cols = xlRange.Columns.Count;
+                        int rows = xlRange.Rows.Count;
+
+                        xlNewSheet2.Cells[rows, 1].value2 = "Time";
+                        xlNewSheet2.Cells[rows, 2].value2 = "Temperature";
+                        xlNewSheet2.Cells[rows, 3].value2 = "Humidity";
+
+                        var columnHeadingsRange = xlNewSheet2.Range[xlNewSheet2.Cells[1, 1], xlNewSheet2.Cells[1, 3]];
+                        columnHeadingsRange.Interior.Color = Excel.XlRgbColor.rgbYellow;
+                        xlNewSheet2.Cells[rows, 1].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                        xlNewSheet2.Cells[rows, 1].Font.Bold = true;
+                        xlNewSheet2.Cells[rows, 2].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                        xlNewSheet2.Cells[rows, 2].Font.Bold = true;
+                        xlNewSheet2.Cells[rows, 3].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                        xlNewSheet2.Cells[rows, 3].Font.Bold = true;
+                        columnHeadingsRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+                        columnHeadingsRange.Borders.Weight = Excel.XlBorderWeight.xlThin;
+
+                        for (int j = 0; j < time.Count; j++)
+                        {
+                            xlNewSheet2.Cells[rows + j + 1, 1].value2 = time[j].ToString() + ":" + time[j].Second.ToString();
+                            xlNewSheet2.Cells[rows + j + 1, 2].value2 = Math.Round(temperature[j], 1);
+                            xlNewSheet2.Cells[rows + j + 1, 3].value2 = Math.Round(humidity[j], 1);
+                        }
+                        xlNewSheet2.Columns.AutoFit();
+                    }
+                    DeleteTable(tableNamesDict[day]);
+                }
 
                 xlWorkBook.SaveAs(excelPath, Excel.XlFileFormat.xlWorkbookNormal, misValue, misValue, misValue, misValue, Excel.XlSaveAsAccessMode.xlExclusive, misValue, misValue, misValue, misValue, misValue); ;
                 xlWorkBook.Close(true, misValue, misValue);
@@ -462,9 +542,6 @@ namespace Home_automation
             }
         }
     }
-
-
-    //ConnectToArduinoServerBtn.Background = new SolidColorBrush(Color.FromArgb(255, 4, 255, 88));
 
     internal class Error
     {
@@ -542,9 +619,7 @@ namespace Home_automation
 
         public void StartServer()
         {
-            // Establish the local endpoint for the socket.  
-            // The DNS name of the computer  
-            // running the listener is "host.contoso.com".  
+            // Establish the local endpoint for the socket.
             IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
             IPAddress ipAddress = ipHostInfo.AddressList[1];
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);

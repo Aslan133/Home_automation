@@ -5,21 +5,16 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Home_automation"
         mc:Ignorable="d"
-        Title="MainWindow" Height="304" Width="402">
+        Title="MainWindow" Height="300" Width="400" ResizeMode="NoResize">
     <Grid>
-        <Button x:Name="ArduinoLedOnBtn" Content="LED ON" HorizontalAlignment="Left" Margin="16,35,0,0" VerticalAlignment="Top" Width="76" Click="ArduinoLedOnBtn_Click"/>
-        <Button x:Name="ArduinoLedOffBtn" Content="LED OF" HorizontalAlignment="Left" Margin="16,60,0,0" VerticalAlignment="Top" Width="76" Click="ArduinoLedOffBtn_Click"/>
-        <Label Content="Temp:" HorizontalAlignment="Left" Margin="16,113,0,0" VerticalAlignment="Top" Width="42"/>
-        <Label Content="Hum:" HorizontalAlignment="Left" Margin="16,139,0,0" VerticalAlignment="Top" Width="42"/>
-        <Label x:Name="TempLbl" Content="Temp" HorizontalAlignment="Left" Margin="63,113,0,0" VerticalAlignment="Top" Width="79"/>
-        <Label x:Name="HumLbl" Content="Hum" HorizontalAlignment="Left" Margin="63,139,0,0" VerticalAlignment="Top" Width="79"/>
-        <Button x:Name="ArduinoDHT22" Content="DHT22+" HorizontalAlignment="Left" Margin="16,85,0,0" VerticalAlignment="Top" Width="76" Click="ArduinoDHT22_Click"/>
-        <Button x:Name="ArduinoDHT22_off" Content="DHT22-" HorizontalAlignment="Left" Margin="97,85,0,0" VerticalAlignment="Top" Width="76" Click="ArduinoDHT22_off_Click"/>
-        <Label x:Name="ConnectionStatusLbl" Content="Status" HorizontalAlignment="Left" Margin="63,9,0,0" VerticalAlignment="Top" Width="144"/>
-        <Label Content="Status:" HorizontalAlignment="Left" Margin="16,9,0,0" VerticalAlignment="Top" Width="49"/>
-        <TextBox x:Name="ServerIPTxt" HorizontalAlignment="Left" Height="23" Margin="207,9,0,0" TextWrapping="Wrap" Text="IP" VerticalAlignment="Top" Width="120"/>
-        <ComboBox x:Name="ErrorMessageCbx" HorizontalAlignment="Left" Margin="178,85,0,0" VerticalAlignment="Top" Width="206" Height="20"/>
-        <TextBox x:Name="gg" HorizontalAlignment="Left" Height="23" Margin="82,215,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120"/>
+        <StackPanel Orientation="Horizontal" Height="35" VerticalAlignment="Top">
+            <Button x:Name="MainNavBtn" Content="MAIN" MinWidth="70" Margin="0,0,0,0" Click="MainNavBtn_Click"/>
+            <Button x:Name="GraphNavBtn" Content="GRAPH" MinWidth="70" Margin="5,0,0,0" Click="GraphNavBtn_Click"/>
+            <Button x:Name="ErrorsNavBtn" Content="ERRORS" MinWidth="70" Margin="5,0,0,0" Click="ErrorsNavBtn_Click"/>
+        </StackPanel>
+            
+        <Frame x:Name="Main" Margin="0,35,0,0" NavigationUIVisibility="Hidden"/>
+        <Button x:Name="ArduinoLedOnBtn" Content="LED ON" HorizontalAlignment="Left" Margin="316,0,0,0" VerticalAlignment="Top" Width="76" Click="ArduinoLedOnBtn_Click"/>
 
     </Grid>
 </Window>

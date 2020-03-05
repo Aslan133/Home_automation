@@ -1,0 +1,15 @@
+﻿<Page x:Class="Home_automation.Errors"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:Home_automation"
+      mc:Ignorable="d" 
+      d:DesignHeight="234" d:DesignWidth="392"
+      Title="Errors">
+
+    <Grid>
+        <ListBox x:Name="ErrosTableLB" HorizontalAlignment="Left" Height="214" Margin="10,10,0,0" VerticalAlignment="Top" Width="372" FontFamily="Times New Roman" FontSize="14"/>
+
+    </Grid>
+</Page>

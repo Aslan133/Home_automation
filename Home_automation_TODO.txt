@@ -2,7 +2,6 @@
 .
 .
 SQL dalis:
-1. surasymas i excel - rusiavima padaryti
 2. Atvaizdavimas: leisti isskleisti pagal laiko ribas
 .
 .

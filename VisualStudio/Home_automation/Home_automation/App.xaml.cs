@@ -13,5 +13,6 @@ namespace Home_automation
     /// </summary>
     public partial class App : Application
     {
+        
     }
 }
