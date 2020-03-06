@@ -62,10 +62,6 @@ namespace Home_automation
             AddErrorCbxUpdateToErrorEvent(_arduinoAsyncSocketListener.ArduinoErrors);
 
             _database = new DatabaseOperations();
-
-            //TcpListener server = new TcpListener(IPAddress.Any, 9999);
-
-            //Update();
         }
         private async void StartServer()
         {
@@ -73,54 +69,6 @@ namespace Home_automation
             {
                 _arduinoAsyncSocketListener.StartServer();
             });
-        }
-
-        private void ArduinoLedOnBtn_Click(object sender, RoutedEventArgs e)
-        {
-            _arduinoAsyncSocketListener.NeedLed = true;
-            //_database.UpdateTempHumDbDayTable(DateTime.Now, 3.3f,55.6f);
-            //DateTime dt = DateTime.Now;
-
-            //_database.CreateNewTempHumDayTable(dt);
-            //gg.Text = _database.ff().Rows.Count.ToString();
-
-            //for (int i = 0; i < _database.GetTableList().Rows.Count; i++)
-            //{
-            //    if (_database.GetTableList().Rows[i][2].ToString() != "Today")
-            //    {
-            //        gg.Text += _database.GetTableList().Rows[i][2].ToString().Split('_')[2];
-            //    }
-
-            //}
-
-            //_database.ff().Rows[2][2].ToString();
-            //gg.Text += _database.GetTableList().Rows[0][2].ToString();
-            //_database.FillExcel("Data_2020_2_1");
-            //_database.createtable(gg.Text);
-        }
-        private void ArduinoLedOffBtn_Click(object sender, RoutedEventArgs e)
-        {
-            _arduinoAsyncSocketListener.NeedLed = false;
-        }
-
-        private async void ArduinoDHT22_Click(object sender, RoutedEventArgs e)
-        {
-            
-        }
-
-        private void ArduinoDHT22_off_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void ConnectToArduinoServerBtn_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void DisconnectToArduinoServerBtn_Click(object sender, RoutedEventArgs e)
-        {
-
         }
         private List<string> ActiveErrors(params Dictionary<string, Error>[] errors)
         {
@@ -184,7 +132,7 @@ namespace Home_automation
         }
     }
 
-    internal class DatabaseOperations
+    public class DatabaseOperations
     {
         private static string _connectionStringRel = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10);
         private static string _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + _connectionStringRel + "TempHumDay.mdf;Integrated Security=True";
@@ -202,11 +150,8 @@ namespace Home_automation
             db.SubmitChanges();
         }
 
-        //avg
-        /*
-        float avgTemp = (float)db.GetTable<Today>().Select(s => s.Temperature).Average();
-        float avgHum = (float)db.GetTable<Today>().Select(s => s.Humidity).Average();
-        */
+        
+        
         private void CheckTempHumDayTable()
         {
             DataContext db = new DataContext(_connectionString);
@@ -489,7 +434,7 @@ namespace Home_automation
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(xlWorkBook);
             }
         }
-        private void GetTableData(string tableName, ref List<DateTime> time, ref List<float> temp, ref List<float> hum)
+        public void GetTableData(string tableName, ref List<DateTime> time, ref List<float> temp, ref List<float> hum)
         {
 
             using (SqlConnection con = new SqlConnection(_connectionString))
@@ -722,17 +667,7 @@ namespace Home_automation
                                 ArduinoErrors["DHT_No1Err"].IsActive = true;
                             }
                         }
-                    }
-
-                    //if (NeedLed)
-                    //{
-                    //    Send(handler, "on<");
-                    //}
-                    //else
-                    //{
-                    //    Send(handler, "off<");
-                    //}
-                    // Echo the data back to the client.  
+                    } 
                     Send(handler, content);
                 }
                 else
@@ -743,13 +678,6 @@ namespace Home_automation
             }
         }
 
-        //public void SendArduinoCustomCommand(string content)
-        //{
-        //    StateObject state = (StateObject)ar.AsyncState;
-        //    Socket handler = state.workSocket;
-
-        //    Send(handler, content);
-        //}
         private static void Send(Socket handler, String data)
         {
             // Convert the string data to byte data using ASCII encoding.  

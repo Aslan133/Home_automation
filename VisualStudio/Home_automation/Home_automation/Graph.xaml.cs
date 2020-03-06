@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Data.SqlClient;
+using System.Data;
 
 namespace Home_automation
 {
@@ -21,27 +22,81 @@ namespace Home_automation
     /// </summary>
     public partial class Graph : Page
     {
+        private static string _connectionStringRel = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10);
+        private static string _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + _connectionStringRel + "TempHumDay.mdf;Integrated Security=True";
+        private DatabaseOperations _database;
+        private Dictionary<int, Dictionary<int, string>> _tableNamesDict;
+
         public Graph()
         {
             InitializeComponent();
+            _database = new DatabaseOperations();
         }
         private void Graph_Loaded(object sender, RoutedEventArgs e)
         {
-            List<DateTime> dateTimeList = new List<DateTime>();
-            List<float> temperatureList = new List<float>();
-            List<float> humidityList = new List<float>();
 
-            GetTableData("Data_2020_3_4", ref dateTimeList, ref temperatureList, ref humidityList);
+            //////////////////////////////////////
+            DataTable tables = _database.GetTableList();
+            _tableNamesDict = new Dictionary<int, Dictionary<int, string>>();
 
-            List<int> hours = new List<int>();
-
-            foreach (var time in dateTimeList)
+            for (int i = 0; i < tables.Rows.Count; i++)
             {
-                hours.Add(time.Hour);
+                if (tables.Rows[i][2].ToString() != "Today")
+                {
+                    var nameParts = tables.Rows[i][2].ToString().Split('_');
+                    bool isInDict = false;
+
+                    if (!_tableNamesDict.Any())
+                    {
+                        _tableNamesDict.Add(Convert.ToInt32(nameParts[2]), new Dictionary<int, string>());
+                        _tableNamesDict[Convert.ToInt32(nameParts[2])].Add(Convert.ToInt32(nameParts[3]), tables.Rows[i][2].ToString());
+                    } else
+                    {
+                        if (_tableNamesDict.ContainsKey(Convert.ToInt32(nameParts[2])))
+                        {
+                            if (!_tableNamesDict[Convert.ToInt32(nameParts[2])].ContainsKey(Convert.ToInt32(nameParts[3])))
+                            {
+                                _tableNamesDict[Convert.ToInt32(nameParts[2])].Add(Convert.ToInt32(nameParts[3]), tables.Rows[i][2].ToString());
+                            }
+                        }
+                        else
+                        {
+                            _tableNamesDict.Add(Convert.ToInt32(nameParts[2]), new Dictionary<int, string>());
+                            _tableNamesDict[Convert.ToInt32(nameParts[2])].Add(Convert.ToInt32(nameParts[3]), tables.Rows[i][2].ToString());
+                        }
+                        
+                    }
+                }
+            }
+            List<string> tableNamesList = new List<string>();
+            List<int> months = new List<int>();
+            months = _tableNamesDict.Keys.ToList();
+            months.Sort();
+
+            foreach (var month in months)
+            {
+                List<int> thisMonthDaysList = new List<int>();
+                thisMonthDaysList = _tableNamesDict[month].Keys.ToList();
+                thisMonthDaysList.Sort();
+                foreach (var day in thisMonthDaysList)
+                {
+                    var nameParts2 = _tableNamesDict[month][day].Split('_');
+                    tableNamesList.Add(nameParts2[2] + "-" + nameParts2[3]);
+                }
             }
 
+            GraphDaysCbx.ItemsSource = tableNamesList;
+            GraphDaysCbx.SelectedIndex = tableNamesList.Count - 1;
 
+            List<string> graphChoices = new List<string>();
+            graphChoices.Add("DAY");
+            graphChoices.Add("ALL");
+            GraphCbx.ItemsSource = graphChoices;
+            GraphCbx.SelectedIndex = 0;
 
+        }
+        private void DrawGraph(bool isDayGraph, string day)
+        {
             //const double margin = 10;
             double xmin = 0;
             double xmax = TempHumGraphCan.Width;
@@ -51,158 +106,319 @@ namespace Home_automation
 
             TempHumGraphCan.Children.Clear();
 
-            TempHumGraphCan.Children.Add(new Label { Content = dateTimeList[1] - dateTimeList[0], Margin = new Thickness(50, 50, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
-
-
-            int hourDifference = hours.Max() - hours.Min();
-            
-            if (hourDifference != 24)
+            if (isDayGraph)
             {
-                hourDifference += 1;
+                List<DateTime> dateTimeList = new List<DateTime>();
+                List<float> temperatureList = new List<float>();
+                List<float> humidityList = new List<float>();
+
+                _database.GetTableData(day, ref dateTimeList, ref temperatureList, ref humidityList);
+
+                List<int> hours = new List<int>();
+
+                foreach (var time in dateTimeList)
+                {
+                    hours.Add(time.Hour);
+                }
+
+                int hourDifference = hours.Max() - hours.Min();
+
+                if (hourDifference != 24)
+                {
+                    hourDifference += 1;
+                }
+
+                double xstep = xmax / hourDifference;
+                double ystep_t = ymax / Math.Ceiling(temperatureList.Max() / 5);
+                double ystep_h = ymax / 10;
+
+
+                // Make the X axis.
+                GeometryGroup xaxis_geom = new GeometryGroup();
+                xaxis_geom.Children.Add(new LineGeometry(new Point(0, ymax), new Point(TempHumGraphCan.Width, ymax)));
+
+                //for (double x = xmin + step; x <= TempHumGraphCan.Width - step; x += step)
+                for (int i = 0; i <= hourDifference; i++)
+                {
+                    xaxis_geom.Children.Add(new LineGeometry(
+                        new Point(xmin + xstep * i, ymax - 5),
+                        new Point(xmin + xstep * i, ymax + 5)));
+                    if (i == 0 || i == Math.Ceiling((double)(hourDifference) / 2) || i == hourDifference)
+                    {
+                        TempHumGraphCan.Children.Add(new Label { Content = hours.Min() + i + ":00", Margin = new Thickness(xstep * i - 20, ymax, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+                    }
+                    if (i == hourDifference)
+                    {
+                        TempHumGraphCan.Children.Add(new Label { Content = "Hours", Margin = new Thickness(xstep * i - 60, ymax, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+                    }
+                }
+
+
+                Path xaxis_path = new Path();
+                xaxis_path.StrokeThickness = 1;
+                xaxis_path.Stroke = Brushes.Black;
+                xaxis_path.Data = xaxis_geom;
+
+                TempHumGraphCan.Children.Add(xaxis_path);
+
+
+                // Make the Y ayis.
+                GeometryGroup yaxis_geom = new GeometryGroup();
+                yaxis_geom.Children.Add(new LineGeometry(new Point(xmin, 0), new Point(xmin, TempHumGraphCan.Height)));
+
+                for (int i = 0; i <= Math.Ceiling(temperatureList.Max() / 5); i++)
+                {
+                    yaxis_geom.Children.Add(new LineGeometry(
+                        new Point(xmin - 5, ymax - ystep_t * i),
+                        new Point(xmin + 5, ymax - ystep_t * i)));
+                    TempHumGraphCan.Children.Add(new Label { Content = i * 5, Margin = new Thickness(xmin - 30, ymax - ystep_t * i - 13, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
+
+                    if (i == Math.Ceiling(temperatureList.Max() / 5))
+                    {
+                        TempHumGraphCan.Children.Add(new Label { Content = "Temp [°C]", Margin = new Thickness(xmin + 6, ymax - ystep_t * i - 13, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
+                    }
+                }
+
+                yaxis_geom.Children.Add(new LineGeometry(new Point(xmax, 0), new Point(xmax, TempHumGraphCan.Height)));
+
+                for (int i = 0; i <= 10; i++)
+                {
+                    yaxis_geom.Children.Add(new LineGeometry(
+                    new Point(xmax - 5, ymax - ystep_h * i),
+                    new Point(xmax + 5, ymax - ystep_h * i)));
+                    TempHumGraphCan.Children.Add(new Label { Content = i * 10, Margin = new Thickness(xmax, ymax - ystep_h * i - 13, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
+
+                    if (i == 10)
+                    {
+                        TempHumGraphCan.Children.Add(new Label { Content = "Hum [%]", Margin = new Thickness(xmax - 60, ymax - ystep_h * i - 13, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
+                    }
+                }
+
+
+                Path yaxis_path = new Path();
+                yaxis_path.StrokeThickness = 1;
+                yaxis_path.Stroke = Brushes.Black;
+                yaxis_path.Data = yaxis_geom;
+
+                TempHumGraphCan.Children.Add(yaxis_path);
+
+
+
+                double hourStep = xmax / hourDifference;
+                double minuteStep = xmax / (hourDifference * 60);
+                double secondStep = xmax / (hourDifference * 3600);
+                double tempStep = ymax / (Math.Ceiling(temperatureList.Max() / 5) * 5);
+                double humStep = ymax / 100;
+
+                DrawGraphLine(Brushes.Red, dateTimeList, temperatureList, hours.Min(), hourStep, minuteStep, secondStep, tempStep, ymax, true, DateTime.Now, 0);
+                DrawGraphLine(Brushes.Blue, dateTimeList, humidityList, hours.Min(), hourStep, minuteStep, secondStep, humStep, ymax, true, DateTime.Now, 0);
+
+                //draw color notations
+                PointCollection points = new PointCollection();
+
+                points.Add(new Point(10, ymax - 30));
+                points.Add(new Point(50, ymax - 30));
+
+
+                Polyline polyline = new Polyline();
+                polyline.StrokeThickness = 1;
+                polyline.Stroke = Brushes.Red;
+                polyline.Points = points;
+
+                TempHumGraphCan.Children.Add(polyline);
+                TempHumGraphCan.Children.Add(new Label { Content = "Temp", Margin = new Thickness(60, ymax - 45, 0, 0) });
+
+                PointCollection points2 = new PointCollection();
+
+                points2.Add(new Point(10, ymax - 10));
+                points2.Add(new Point(50, ymax - 10));
+
+
+                Polyline polyline2 = new Polyline();
+                polyline2.StrokeThickness = 1;
+                polyline2.Stroke = Brushes.Blue;
+                polyline2.Points = points2;
+
+                TempHumGraphCan.Children.Add(polyline2);
+                TempHumGraphCan.Children.Add(new Label { Content = "Hum", Margin = new Thickness(60, ymax - 25, 0, 0) });
+
+                MaxTempHumLbl.Content = Math.Round(temperatureList.Max(), 1) + "°C; " + Math.Round(humidityList.Max(), 1) + "%";
+                MinTempHumLbl.Content = Math.Round(temperatureList.Min(), 1) + "°C; " + Math.Round(humidityList.Min(), 1) + "%";
             }
-
-            double xstep = xmax / hourDifference;
-            double ystep_t = ymax / Math.Ceiling(temperatureList.Max()/5);
-            double ystep_h = ymax / 10;
-
-            // Make the X axis.
-            GeometryGroup xaxis_geom = new GeometryGroup();
-            xaxis_geom.Children.Add(new LineGeometry(new Point(0, ymax), new Point(TempHumGraphCan.Width, ymax)));
             
-            //for (double x = xmin + step; x <= TempHumGraphCan.Width - step; x += step)
-            for (int i = 0; i <= hourDifference; i++)
+            else
             {
-                xaxis_geom.Children.Add(new LineGeometry(
-                    new Point(xmin + xstep * i, ymax - 5),
-                    new Point(xmin + xstep * i, ymax + 5)));
-                if (i == 0 || i == Math.Ceiling((double)(hourDifference) / 2) || i == hourDifference)
+                List<string> tableNames = new List<string>();
+                foreach (var item in GraphDaysCbx.ItemsSource)
                 {
-                    TempHumGraphCan.Children.Add(new Label { Content = hours.Min() + i + ":00", Margin = new Thickness(xstep * i - 20, ymax, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+                    tableNames.Add(item.ToString());
                 }
-                if (i == hourDifference)
+
+                List<DateTime> time = new List<DateTime>();
+                List<float> temperature = new List<float>();
+                List<float> humidity = new List<float>();
+
+                foreach (var name in tableNames)
                 {
-                    TempHumGraphCan.Children.Add(new Label { Content = "Hours", Margin = new Thickness(xstep * i - 60, ymax, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+                    var nameParts3 = name.Split('-');
+
+                    List<DateTime> dateTimeList = new List<DateTime>();
+                    List<float> temperatureList = new List<float>();
+                    List<float> humidityList = new List<float>();
+
+                    _database.GetTableData(_tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])], ref dateTimeList, ref temperatureList, ref humidityList);
+
+                    time.Add(dateTimeList.First());
+                    temperature.Add(temperatureList.Average());
+                    humidity.Add(humidityList.Average());
                 }
-            }
 
-            
-            Path xaxis_path = new Path();
-            xaxis_path.StrokeThickness = 1;
-            xaxis_path.Stroke = Brushes.Black;
-            xaxis_path.Data = xaxis_geom;
-
-            TempHumGraphCan.Children.Add(xaxis_path);
-
-            
-            // Make the Y ayis.
-            GeometryGroup yaxis_geom = new GeometryGroup();
-            yaxis_geom.Children.Add(new LineGeometry(new Point(xmin, 0), new Point(xmin, TempHumGraphCan.Height)));
-
-            //for (double y = step; y <= TempHumGraphCan.Height - step; y += step)
-            for (int i = 0; i <= Math.Ceiling(temperatureList.Max() / 5); i++)
-            {
-                yaxis_geom.Children.Add(new LineGeometry(
-                    new Point(xmin - 5, ymax - ystep_t * i),
-                    new Point(xmin + 5, ymax - ystep_t * i)));
-                TempHumGraphCan.Children.Add(new Label { Content = i * 5, Margin = new Thickness(xmin - 30, ymax - ystep_t * i - 13, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
-
-                if (i == Math.Ceiling(temperatureList.Max() / 5))
-                {
-                    TempHumGraphCan.Children.Add(new Label { Content = "Temp [°C]", Margin = new Thickness(xmin + 6, ymax - ystep_t * i - 13, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
-                }
-            }
-
-            yaxis_geom.Children.Add(new LineGeometry(new Point(xmax, 0), new Point(xmax, TempHumGraphCan.Height)));
-            
-            for (int i = 0; i <= 10; i++)
-            {
-                yaxis_geom.Children.Add(new LineGeometry(
-                new Point(xmax - 5 , ymax - ystep_h * i),
-                new Point(xmax + 5, ymax - ystep_h * i)));
-                TempHumGraphCan.Children.Add(new Label { Content = i * 10, Margin = new Thickness(xmax , ymax - ystep_h * i - 13, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
-
-                if (i == 10)
-                {
-                    TempHumGraphCan.Children.Add(new Label { Content = "Hum [%]", Margin = new Thickness(xmax -60, ymax - ystep_h * i - 13, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
-                }
-            }
-            
-
-            Path yaxis_path = new Path();
-            yaxis_path.StrokeThickness = 1;
-            yaxis_path.Stroke = Brushes.Black;
-            yaxis_path.Data = yaxis_geom;
-
-            TempHumGraphCan.Children.Add(yaxis_path);
-
-            double hourStep = xmax / hourDifference;
-            double minuteStep = xmax / (hourDifference * 60);
-            double secondStep = xmax / (hourDifference * 3600);
-            double tempStep = ymax / (Math.Ceiling(temperatureList.Max() / 5) * 5);
-            double humStep = ymax / 100;
-
-            DrawGraphLine(Brushes.Red, dateTimeList, temperatureList, hours.Min(), hourStep, minuteStep, secondStep, tempStep, ymax);
-            DrawGraphLine(Brushes.Blue, dateTimeList, humidityList, hours.Min(), hourStep, minuteStep, secondStep, humStep, ymax);
-
-        }
-        /*
-        private void DrawAxis(double lineStartPoint_x, double lineStartPoint_y, double lineEndPoint_x, double lineEndPoint_y, int sectionNumber,
-            double step, int markerSize, int hourOrigin
-            )
-        {
-            bool isHorizontalAxis = false;
-
-            if (lineStartPoint_y == lineEndPoint_y)
-            {
-                isHorizontalAxis = true;
-            }
-
-            // Make the X axis.
-            GeometryGroup axis_geom = new GeometryGroup();
-            axis_geom.Children.Add(new LineGeometry(new Point(lineStartPoint_x, lineStartPoint_y), new Point(lineEndPoint_x, lineEndPoint_y)));
-
-            //for (double x = xmin + step; x <= TempHumGraphCan.Width - step; x += step)
-            for (int i = 0; i <= sectionNumber; i++)
-            {
-                if (isHorizontalAxis)
-                {
-                    axis_geom.Children.Add(new LineGeometry(
-                                        new Point(lineStartPoint_x + step * i, lineEndPoint_y - markerSize/2),
-                                        new Point(lineStartPoint_x + step * i, lineEndPoint_y + markerSize / 2)));
-                }
-                else
-                {
-                    axis_geom.Children.Add(new LineGeometry(
-                                        new Point(lineStartPoint_x - markerSize / 2, lineEndPoint_y - step * i),
-                                        new Point(lineStartPoint_x + markerSize / 2, lineEndPoint_y - step * i)));
-                }
+                int days = 0;
+                days = (int)Math.Ceiling((time.Last() - time.First()).TotalDays);
                 
-                if (i == 0 || i == Math.Ceiling((double)(sectionNumber) / 2) || i == sectionNumber)
+
+                //time.Last().Month - time.First().Month
+                //TempHumGraphCan.Children.Add(new Label { Content = days, Margin = new Thickness(50, 50, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
+
+
+                double xstep = xmax / days;
+                double ystep_t = ymax / Math.Ceiling(temperature.Max() / 5);
+                double ystep_h = ymax / 10;
+
+                
+                // Make the X axis.
+                GeometryGroup xaxis_geom = new GeometryGroup();
+                xaxis_geom.Children.Add(new LineGeometry(new Point(0, ymax), new Point(TempHumGraphCan.Width, ymax)));
+
+                //for (double x = xmin + step; x <= TempHumGraphCan.Width - step; x += step)
+                for (int i = 0; i <= days; i++)
                 {
-                    TempHumGraphCan.Children.Add(new Label { Content = hourOrigin + i + ":00", Margin = new Thickness(xstep * i - 20, ymax, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+                    xaxis_geom.Children.Add(new LineGeometry(
+                        new Point(xmin + xstep * i, ymax - 5),
+                        new Point(xmin + xstep * i, ymax + 5)));
+                    if (i == 0 )
+                    {
+                        TempHumGraphCan.Children.Add(new Label { Content = time.First().Month + "-" + time.First().Day, Margin = new Thickness(xstep * i - 20, ymax, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+                    }
+                    else if(i == days)
+                    {
+                        TempHumGraphCan.Children.Add(new Label { Content = time.Last().Month + "-" + time.Last().Day, Margin = new Thickness(xstep * i - 20, ymax, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+                    }
+                    if (i == days)
+                    {
+                        TempHumGraphCan.Children.Add(new Label { Content = "Date", Margin = new Thickness(xstep * i - 60, ymax, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+                    }
                 }
-                if (i == sectionNumber)
+
+
+                Path xaxis_path = new Path();
+                xaxis_path.StrokeThickness = 1;
+                xaxis_path.Stroke = Brushes.Black;
+                xaxis_path.Data = xaxis_geom;
+
+                TempHumGraphCan.Children.Add(xaxis_path);
+
+
+                // Make the Y ayis.
+                GeometryGroup yaxis_geom = new GeometryGroup();
+                yaxis_geom.Children.Add(new LineGeometry(new Point(xmin, 0), new Point(xmin, TempHumGraphCan.Height)));
+
+                for (int i = 0; i <= Math.Ceiling(temperature.Max() / 5); i++)
                 {
-                    TempHumGraphCan.Children.Add(new Label { Content = "Hours", Margin = new Thickness(xstep * i - 60, ymax, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+                    yaxis_geom.Children.Add(new LineGeometry(
+                        new Point(xmin - 5, ymax - ystep_t * i),
+                        new Point(xmin + 5, ymax - ystep_t * i)));
+                    TempHumGraphCan.Children.Add(new Label { Content = i * 5, Margin = new Thickness(xmin - 30, ymax - ystep_t * i - 13, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
+
+                    if (i == Math.Ceiling(temperature.Max() / 5))
+                    {
+                        TempHumGraphCan.Children.Add(new Label { Content = "Temp [°C]", Margin = new Thickness(xmin + 6, ymax - ystep_t * i - 13, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
+                    }
                 }
+
+                yaxis_geom.Children.Add(new LineGeometry(new Point(xmax, 0), new Point(xmax, TempHumGraphCan.Height)));
+
+                for (int i = 0; i <= 10; i++)
+                {
+                    yaxis_geom.Children.Add(new LineGeometry(
+                    new Point(xmax - 5, ymax - ystep_h * i),
+                    new Point(xmax + 5, ymax - ystep_h * i)));
+                    TempHumGraphCan.Children.Add(new Label { Content = i * 10, Margin = new Thickness(xmax, ymax - ystep_h * i - 13, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
+
+                    if (i == 10)
+                    {
+                        TempHumGraphCan.Children.Add(new Label { Content = "Hum [%]", Margin = new Thickness(xmax - 60, ymax - ystep_h * i - 13, 0, 0), HorizontalAlignment = HorizontalAlignment.Right });
+                    }
+                }
+
+
+                Path yaxis_path = new Path();
+                yaxis_path.StrokeThickness = 1;
+                yaxis_path.Stroke = Brushes.Black;
+                yaxis_path.Data = yaxis_geom;
+
+                TempHumGraphCan.Children.Add(yaxis_path);
+
+
+
+                double dayStep = xmax / days;
+                double tempStep = ymax / (Math.Ceiling(temperature.Max() / 5) * 5);
+                double humStep = ymax / 100;
+
+                DrawGraphLine(Brushes.Red, time, temperature, 0, 0, 0, 0, tempStep, ymax, false, time.First(), dayStep);
+                DrawGraphLine(Brushes.Blue, time, humidity, 0, 0, 0, 0, humStep, ymax, false, time.First(), dayStep);
+                //DrawGraphLine(Brushes.Blue, dateTimeList, humidityList, hours.Min(), hourStep, minuteStep, secondStep, humStep, ymax);
+
+                //draw color notations
+                PointCollection points = new PointCollection();
+
+                points.Add(new Point(10, ymax - 30));
+                points.Add(new Point(50, ymax - 30));
+
+
+                Polyline polyline = new Polyline();
+                polyline.StrokeThickness = 1;
+                polyline.Stroke = Brushes.Red;
+                polyline.Points = points;
+
+                TempHumGraphCan.Children.Add(polyline);
+                TempHumGraphCan.Children.Add(new Label { Content = "Temp", Margin = new Thickness(60, ymax - 45, 0, 0) });
+
+                PointCollection points2 = new PointCollection();
+
+                points2.Add(new Point(10, ymax - 10));
+                points2.Add(new Point(50, ymax - 10));
+
+
+                Polyline polyline2 = new Polyline();
+                polyline2.StrokeThickness = 1;
+                polyline2.Stroke = Brushes.Blue;
+                polyline2.Points = points2;
+
+                TempHumGraphCan.Children.Add(polyline2);
+                TempHumGraphCan.Children.Add(new Label { Content = "Hum", Margin = new Thickness(60, ymax - 25, 0, 0) });
+
+
+                MaxTempHumLbl.Content = Math.Round(temperature.Max(),1) + "°C; " + Math.Round(humidity.Max(),1) + "%";
+                MinTempHumLbl.Content = Math.Round(temperature.Min(),1) + "°C; " + Math.Round(humidity.Min(),1) + "%";
             }
-
-
-            Path xaxis_path = new Path();
-            xaxis_path.StrokeThickness = 1;
-            xaxis_path.Stroke = Brushes.Black;
-            xaxis_path.Data = axis_geom;
-
-            TempHumGraphCan.Children.Add(xaxis_path);
         }
-        */
-        private void DrawGraphLine(Brush brush, List<DateTime> time, List<float> data, int timeOriginHour, double stepHour, double stepMinute, double stepSecond, double stepData, double ymax)
+
+
+        private void DrawGraphLine(Brush brush, List<DateTime> time, List<float> data, int timeOriginHour, double stepHour, double stepMinute, double stepSecond, double stepData, double ymax, bool isDayGraph, DateTime originDay, double stepDay)
         {
             PointCollection points = new PointCollection();
 
             for (int i = 0; i < time.Count; i++)
             {
-                points.Add(new Point((time[i].Hour - timeOriginHour) * stepHour + time[i].Minute * stepMinute + time[i].Second * stepSecond, ymax - data[i] * stepData));
+                if(isDayGraph)
+                {
+                    points.Add(new Point((time[i].Hour - timeOriginHour) * stepHour + time[i].Minute * stepMinute + time[i].Second * stepSecond, ymax - data[i] * stepData));
+                }
+                else
+                {
+                    points.Add(new Point(Math.Ceiling((time[i] - originDay).TotalDays) * stepDay, ymax - data[i] * stepData));
+                }
             }
 
             Polyline polyline = new Polyline();
@@ -212,35 +428,25 @@ namespace Home_automation
 
             TempHumGraphCan.Children.Add(polyline);
         }
-        private void GetTableData(string tableName, ref List<DateTime> time, ref List<float> temp, ref List<float> hum)
+
+        private void GraphCbxSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-           string _connectionStringRel = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10);
-           string _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + _connectionStringRel + "TempHumDay.mdf;Integrated Security=True";
-
-            using (SqlConnection con = new SqlConnection(_connectionString))
+            if (GraphCbx.SelectedItem.ToString() == "ALL")
             {
-                try
-                {
-                    string querry = "SELECT * FROM " + tableName;
-
-                    using (SqlCommand command = new SqlCommand(querry, con))
-                    {
-                        con.Open();
-                        var reader = command.ExecuteReader();
-                        while (reader.Read())
-                        {
-                            time.Add(Convert.ToDateTime(reader["Time"].ToString()));
-                            temp.Add(float.Parse(reader["Temperature"].ToString()));
-                            hum.Add(float.Parse(reader["Humidity"].ToString()));
-                        }
-                    }
-                    con.Close();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
+                GraphDaysCbx.Visibility = Visibility.Collapsed;
+                DrawGraph(false, "");
+            } else
+            {
+                GraphDaysCbx.Visibility = Visibility.Visible;
+                var nameParts3 = GraphDaysCbx.SelectedItem.ToString().Split('-');
+                DrawGraph(true, _tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])]);
             }
+        }
+
+        private void GraphDaysCbxSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var nameParts3 = GraphDaysCbx.SelectedItem.ToString().Split('-');
+            DrawGraph(true, _tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])]);
         }
     }
 }

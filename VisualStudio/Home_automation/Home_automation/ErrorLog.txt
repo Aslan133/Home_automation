@@ -25,3 +25,4 @@ Temperature/Humidity sensor error: 2020-03-05 11:21:33
 Temperature/Humidity sensor error: 2020-03-05 11:23:33
 Temperature/Humidity sensor error: 2020-03-05 11:30:20
 Temperature/Humidity sensor error: 2020-03-05 11:36:45
+Communication with Arduino TCP Server error: 2020-03-06 18:09:05

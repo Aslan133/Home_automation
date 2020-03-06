@@ -5,11 +5,17 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:Home_automation"
       mc:Ignorable="d" 
-      d:DesignHeight="234" d:DesignWidth="392"
+      d:DesignHeight="265" d:DesignWidth="394"
       Title="Graph"
       Loaded="Graph_Loaded">
 
     <Grid>
         <Canvas x:Name="TempHumGraphCan" HorizontalAlignment="Left" Height="194" Margin="24,10,0,0" VerticalAlignment="Top" Width="331"/>
+        <ComboBox x:Name="GraphCbx" HorizontalAlignment="Left" Margin="9,228,0,0" VerticalAlignment="Top" Width="52" SelectionChanged="GraphCbxSelectionChanged"/>
+        <ComboBox x:Name="GraphDaysCbx" HorizontalAlignment="Left" Margin="65,228,0,0" VerticalAlignment="Top" Width="53" SelectionChanged="GraphDaysCbxSelectionChanged"/>
+        <Label Content="MAX:" HorizontalAlignment="Left" Margin="118,226,0,0" VerticalAlignment="Top" Width="42"/>
+        <Label Content="MIN:" HorizontalAlignment="Left" Margin="242,226,0,0" VerticalAlignment="Top" Width="42"/>
+        <Label x:Name="MaxTempHumLbl" Content="" HorizontalAlignment="Left" Margin="151,226,0,0" VerticalAlignment="Top" Width="97"/>
+        <Label x:Name="MinTempHumLbl" Content="" HorizontalAlignment="Left" Margin="269,226,0,0" VerticalAlignment="Top" Width="96"/>
     </Grid>
 </Page>
