@@ -49,6 +49,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -160,6 +163,10 @@
     <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="ExitBtn.PNG" />
+    <Resource Include="MinimizeBtn.PNG" />
+    <Resource Include="Icon.PNG" />
+    <Resource Include="icon.ico" />
     <Content Include="TempHumDay.mdf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

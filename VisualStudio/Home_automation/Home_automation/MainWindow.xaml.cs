@@ -31,15 +31,9 @@ namespace Home_automation
     /// </summary>
     /// 
 
-
     public partial class MainWindow : Window
     {
-        
-
         private ArduinoAsynchronousSocketListener _arduinoAsyncSocketListener;
-        private DatabaseOperations _database;
-
-
         private Monitor _monitor;
         private Graph _graph;
         private Errors _errors;
@@ -48,20 +42,24 @@ namespace Home_automation
         {
             InitializeComponent();
 
+            //create other windows
             _monitor = new Monitor();
             _graph = new Graph();
             _errors = new Errors();
 
+            //initial window - monitor
             Main.Content = _monitor;
+            MainNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 71, 178, 245));
+            GraphNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
+            ErrorsNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
 
 
-
+            //start TCP/IP server to and start getting temp - hum data
             _arduinoAsyncSocketListener = new ArduinoAsynchronousSocketListener(ref _monitor.TempLbl, ref _monitor.HumLbl);
             StartServer();
 
+            //add event to every error
             AddErrorCbxUpdateToErrorEvent(_arduinoAsyncSocketListener.ArduinoErrors);
-
-            _database = new DatabaseOperations();
         }
         private async void StartServer()
         {
@@ -81,24 +79,32 @@ namespace Home_automation
                     activeErrors.Add(err.Value.Message);
                 }
             }
-
             return activeErrors;
         }
         private void RefreshErrorCombobox(object sender, System.EventArgs e)
         {
-            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            try
             {
-                _errors.ErrosTableLB.ItemsSource = null;
-                _errors.ErrosTableLB.ItemsSource = ActiveErrors(_arduinoAsyncSocketListener.ArduinoErrors);
+                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                {
+                    _errors.ErrosTableLB.ItemsSource = null;
+                    _errors.ErrosTableLB.ItemsSource = ActiveErrors(_arduinoAsyncSocketListener.ArduinoErrors);
 
-                if (_errors.ErrosTableLB.Items.Count > 0)
-                {
-                    ErrorsNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 252, 3, 44));
-                } else
-                {
-                    ErrorsNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 221, 221, 221));
-                }
-            }));
+                    if (_errors.ErrosTableLB.Items.Count > 0)
+                    {
+                        ErrorsNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 252, 3, 44));
+                    }
+                    else
+                    {
+                        ErrorsNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
+                    }
+                }));
+            }
+            catch (Exception)
+            {
+                //throw;
+            }
+            
         }
         private void AddErrorCbxUpdateToErrorEvent(params Dictionary<string, Error>[] errors)
         {
@@ -111,24 +117,51 @@ namespace Home_automation
             }
         }
 
-        private void TempHumGraphNavBtn_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void MainNavBtn_Click(object sender, RoutedEventArgs e)
         {
             Main.Content = _monitor;
+
+            //button colors
+            MainNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 71, 178, 245));
+            GraphNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
+            ErrorsNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
         }
 
         private void GraphNavBtn_Click(object sender, RoutedEventArgs e)
         {
             Main.Content = _graph;
+
+            //button colors
+            MainNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
+            GraphNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 71, 178, 245));
+            ErrorsNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
         }
 
         private void ErrorsNavBtn_Click(object sender, RoutedEventArgs e)
         {
             Main.Content = _errors;
+
+            //button colors
+            MainNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
+            GraphNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
+            ErrorsNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 71, 178, 245));
+        }
+
+        private void ExitBtn_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Application.Current.Shutdown();
+        }
+        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                this.DragMove();
+            }
+        }
+
+        private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Minimized;
         }
     }
 
@@ -150,8 +183,6 @@ namespace Home_automation
             db.SubmitChanges();
         }
 
-        
-        
         private void CheckTempHumDayTable()
         {
             DataContext db = new DataContext(_connectionString);
@@ -210,13 +241,9 @@ namespace Home_automation
                         firstSheetName = "";
                     }
 
-
-
                     //create new day table
 
-                    string tableName =
-                        "Data_"
-                        + date.Year.ToString() + "_" + date.Month.ToString() + "_" + date.Day.ToString();
+                    string tableName = "Data_" + date.Year.ToString() + "_" + date.Month.ToString() + "_" + date.Day.ToString();
 
                     using (SqlConnection con = new SqlConnection(_connectionString))
                     {
@@ -487,7 +514,7 @@ namespace Home_automation
         }
     }
 
-    internal class Error
+    public class Error
     {
         public event EventHandler ErrorStateChanged;
         private void OnStateChanged()
@@ -540,11 +567,11 @@ namespace Home_automation
     }
     internal class ArduinoAsynchronousSocketListener : DatabaseOperations
     {
-        public Dictionary<string, Error> ArduinoErrors { get; }
-        public bool NeedLed { get; set; }
+        public Dictionary<string, Error> ArduinoErrors { get; set;}
 
         private Label _tempLabel;
         private Label _humLabel;
+        private Stopwatch _commErrorWatch;
 
         // Thread signal.  
         public static ManualResetEvent allDone = new ManualResetEvent(false);
@@ -553,10 +580,11 @@ namespace Home_automation
         {
             _tempLabel = tempLbl;
             _humLabel = humLbl;
+            _commErrorWatch = new Stopwatch();
 
             #region InitErrors
             ArduinoErrors = new Dictionary<string, Error>();
-            ArduinoErrors.Add("ServerComErr", new Error("Communication with Arduino TCP Server error"));
+            ArduinoErrors.Add("ServerComErr", new Error("Communication with Arduino No1 error"));
             ArduinoErrors.Add("DHT_No1Err", new Error("Temperature/Humidity sensor error"));
             #endregion
         }
@@ -569,10 +597,8 @@ namespace Home_automation
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
 
             // Create a TCP/IP socket.  
-            Socket listener = new Socket(ipAddress.AddressFamily,
-                SocketType.Stream, ProtocolType.Tcp);
+            Socket listener = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
-              
 
             // Bind the socket to the local endpoint and listen for incoming connections.  
             try
@@ -580,16 +606,15 @@ namespace Home_automation
                 listener.Bind(localEndPoint);
                 listener.Listen(100);
 
+                RunErrorTimer(15);
+
                 while (true)
                 {
                     // Set the event to nonsignaled state.  
                     allDone.Reset();
-
+                    
                     // Start an asynchronous socket to listen for connections. 
                     listener.BeginAccept(new AsyncCallback(AcceptCallback), listener);
-
-
-                    ArduinoErrors["ServerComErr"].IsActive = false;
 
                     // Wait until a connection is made before continuing.  
                     allDone.WaitOne();
@@ -604,6 +629,21 @@ namespace Home_automation
                 }
             }
 
+        }
+        private async void RunErrorTimer(int timeoutSeconds)
+        {
+            await Task.Run(() =>
+            {
+                _commErrorWatch.Start();
+
+                while (true)
+                {
+                    if (_commErrorWatch.Elapsed.Seconds > timeoutSeconds)
+                    {
+                        ArduinoErrors["ServerComErr"].IsActive = true;
+                    }
+                }
+            });
         }
 
         public void AcceptCallback(IAsyncResult ar)
@@ -635,6 +675,9 @@ namespace Home_automation
 
             if (bytesRead > 0)
             {
+                ArduinoErrors["ServerComErr"].IsActive = false;
+                _commErrorWatch.Restart();
+                
                 // There  might be more data, so store the data received so far.  
                 state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, bytesRead));
 
@@ -678,7 +721,7 @@ namespace Home_automation
             }
         }
 
-        private static void Send(Socket handler, String data)
+        private void Send(Socket handler, String data)
         {
             // Convert the string data to byte data using ASCII encoding.  
             byte[] byteData = Encoding.ASCII.GetBytes(data);
@@ -687,7 +730,7 @@ namespace Home_automation
             handler.BeginSend(byteData, 0, byteData.Length, 0, new AsyncCallback(SendCallback), handler);
         }
 
-        private static void SendCallback(IAsyncResult ar)
+        private void SendCallback(IAsyncResult ar)
         {
             try
             {
@@ -699,14 +742,11 @@ namespace Home_automation
 
                 handler.Shutdown(SocketShutdown.Both);
                 handler.Close();
-
             }
             catch (Exception e)
             {
-                //Console.WriteLine(e.ToString());
-
+                //
             }
         }
-
     }
 }

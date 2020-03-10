@@ -5,7 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:Home_automation"
       mc:Ignorable="d" 
-      d:DesignHeight="265" d:DesignWidth="394"
+      d:DesignHeight="294" d:DesignWidth="400"
       Title="Monitor">
 
     <Grid>
@@ -13,8 +13,8 @@
         <Label Content="HUMIDITY:" HorizontalAlignment="Left" Margin="10,75,0,0" VerticalAlignment="Top" Width="92"/>
         <Label x:Name="TempLbl" Content="NaN" HorizontalAlignment="Left" Margin="107,49,0,0" VerticalAlignment="Top" Width="79"/>
         <Label x:Name="HumLbl" Content="NaN" HorizontalAlignment="Left" Margin="107,75,0,0" VerticalAlignment="Top" Width="79"/>
-        <Label Content="ROOM NO. 1" HorizontalAlignment="Left" Margin="10,23,0,0" VerticalAlignment="Top" Width="92"/>
-        <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="1" Margin="15,45,0,0" Stroke="Black" VerticalAlignment="Top" Width="72" RenderTransformOrigin="0.5,0.5">
+        <Label Content="ROOM NO. 1" HorizontalAlignment="Left" Margin="10,23,0,0" VerticalAlignment="Top" Width="92" FontSize="14" FontWeight="Bold"/>
+        <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="1" Margin="15,45,0,0" Stroke="Black" VerticalAlignment="Top" Width="83" RenderTransformOrigin="0.5,0.5">
             <Rectangle.RenderTransform>
                 <TransformGroup>
                     <ScaleTransform ScaleY="-1"/>
@@ -24,8 +24,8 @@
                 </TransformGroup>
             </Rectangle.RenderTransform>
         </Rectangle>
-        <Label Content="ROOM NO. 2" HorizontalAlignment="Left" Margin="11,104,0,0" VerticalAlignment="Top" Width="92"/>
-        <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="1" Margin="16,126,0,0" Stroke="Black" VerticalAlignment="Top" Width="72" RenderTransformOrigin="0.5,0.5">
+        <Label Content="ROOM NO. 2" HorizontalAlignment="Left" Margin="11,104,0,0" VerticalAlignment="Top" Width="98" FontSize="14" FontWeight="Bold"/>
+        <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="1" Margin="16,126,0,0" Stroke="Black" VerticalAlignment="Top" Width="85" RenderTransformOrigin="0.5,0.5">
             <Rectangle.RenderTransform>
                 <TransformGroup>
                     <ScaleTransform ScaleY="-1"/>
@@ -35,8 +35,8 @@
                 </TransformGroup>
             </Rectangle.RenderTransform>
         </Rectangle>
-        <Label Content="OTHER INFO" HorizontalAlignment="Left" Margin="224,23,0,0" VerticalAlignment="Top" Width="92"/>
-        <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="1" Margin="229,45,0,0" Stroke="Black" VerticalAlignment="Top" Width="72" RenderTransformOrigin="0.5,0.5">
+        <Label Content="OTHER INFO" HorizontalAlignment="Left" Margin="224,23,0,0" VerticalAlignment="Top" Width="93" FontSize="14" FontWeight="Bold"/>
+        <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="1" Margin="229,45,0,0" Stroke="Black" VerticalAlignment="Top" Width="83" RenderTransformOrigin="0.5,0.5">
             <Rectangle.RenderTransform>
                 <TransformGroup>
                     <ScaleTransform ScaleY="-1"/>
