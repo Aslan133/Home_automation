@@ -640,7 +640,10 @@ namespace Home_automation
                 {
                     if (_commErrorWatch.Elapsed.Seconds > timeoutSeconds)
                     {
-                        ArduinoErrors["ServerComErr"].IsActive = true;
+                        if (!ArduinoErrors["ServerComErr"].IsActive)
+                        {
+                            ArduinoErrors["ServerComErr"].IsActive = true;
+                        }
                     }
                 }
             });
@@ -675,7 +678,10 @@ namespace Home_automation
 
             if (bytesRead > 0)
             {
-                ArduinoErrors["ServerComErr"].IsActive = false;
+                if (ArduinoErrors["ServerComErr"].IsActive)
+                {
+                    ArduinoErrors["ServerComErr"].IsActive = false;
+                }
                 _commErrorWatch.Restart();
                 
                 // There  might be more data, so store the data received so far.  
