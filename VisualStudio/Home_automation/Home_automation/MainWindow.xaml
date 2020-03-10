@@ -5,15 +5,54 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Home_automation"
         mc:Ignorable="d"
-        Title="MainWindow" Height="328.667" Width="400" ResizeMode="NoResize">
+        Title="HOME AUTOMATION" Height="328.667" Width="400" ResizeMode="CanMinimize" Background="#FFD3F5FF" Foreground="Black" IsTabStop="True" WindowStyle="None" MouseDown="Window_MouseDown" BorderBrush="#FF0017FF" BorderThickness="1" Icon="Icon.PNG">
+    <Window.Resources>
+        <ControlTemplate x:Key="ButtonControlTemplate1" TargetType="{x:Type Button}">
+            <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                <ContentPresenter x:Name="contentPresenter" ContentTemplate="{TemplateBinding ContentTemplate}" Content="{TemplateBinding Content}" ContentStringFormat="{TemplateBinding ContentStringFormat}" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsDefaulted" Value="False">
+                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" TargetName="border" Value="0.5"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Opacity" TargetName="border" Value="0.5"/>
+                </Trigger>
+                <Trigger Property="ToggleButton.IsChecked" Value="True">
+                    <Setter Property="Background" TargetName="border" Value="#FFBCDDEE"/>
+                    <Setter Property="BorderBrush" TargetName="border" Value="#FF245A83"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" TargetName="border" Value="#FFF4F4F4"/>
+                    <Setter Property="BorderBrush" TargetName="border" Value="#FFADB2B5"/>
+                    <Setter Property="Foreground" Value="#FF838383"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+    </Window.Resources>
     <Grid>
-        <StackPanel Orientation="Horizontal" Height="35" VerticalAlignment="Top">
-            <Button x:Name="MainNavBtn" Content="MAIN" MinWidth="70" Margin="0,0,0,0" Click="MainNavBtn_Click"/>
-            <Button x:Name="GraphNavBtn" Content="GRAPH" MinWidth="70" Margin="5,0,0,0" Click="GraphNavBtn_Click"/>
-            <Button x:Name="ErrorsNavBtn" Content="ERRORS" MinWidth="70" Margin="5,0,0,0" Click="ErrorsNavBtn_Click"/>
+        <StackPanel Orientation="Horizontal" Height="35" VerticalAlignment="Top" Margin="0,0,86,0">
+            <Button x:Name="MainNavBtn" Content="MAIN" MinWidth="70" Margin="0,0,0,0" Click="MainNavBtn_Click" Background="#FF98E6FD" FontWeight="Bold" FontSize="16" Foreground="#FF0023FF"/>
+            <Button x:Name="GraphNavBtn" Content="GRAPH" MinWidth="70" Margin="5,0,0,0" Click="GraphNavBtn_Click" Background="#FF98E6FD" FontSize="16" FontWeight="Bold" Foreground="#FF0023FF"/>
+            <Button x:Name="ErrorsNavBtn" Content="ERRORS" MinWidth="70" Margin="5,0,0,0" Click="ErrorsNavBtn_Click" Background="#FF98E6FD" FontWeight="Bold" FontSize="16" Foreground="#FF0023FF"/>
         </StackPanel>
-            
-        <Frame x:Name="Main" Margin="0,35,0,0" NavigationUIVisibility="Hidden"/>
+
+        <Frame x:Name="Main" Margin="0,35,0,0" NavigationUIVisibility="Hidden" Background="White" BorderBrush="#FF3D61FF" Padding="0" BorderThickness="0,1,0,0"/>
+        <Button x:Name="ExitBtn" Content="" HorizontalAlignment="Left" Margin="363,0,0,0" VerticalAlignment="Top" Width="37" Height="35" Click="ExitBtn_Click" Template="{DynamicResource ButtonControlTemplate1}">
+
+            <Button.Background>
+                <ImageBrush ImageSource="ExitBtn.PNG" TileMode="FlipX"/>
+            </Button.Background>
+
+        </Button>
+        <Button x:Name="MinimizeBtn" Content="" HorizontalAlignment="Left" Margin="323,0,0,0" VerticalAlignment="Top" Width="37" Height="35" Click="MinimizeBtn_Click" Template="{DynamicResource ButtonControlTemplate1}" FontSize="24" FontWeight="Bold">
+            <Button.Background>
+                <ImageBrush ImageSource="MinimizeBtn.PNG"/>
+            </Button.Background>
+        </Button>
 
     </Grid>
 </Window>
