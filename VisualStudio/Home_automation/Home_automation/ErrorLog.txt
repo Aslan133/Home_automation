@@ -39,3 +39,15 @@ Communication with Arduino No1 error: 2020-03-14 09:00:52
 Communication with Arduino No1 error: 2020-03-14 09:13:28
 Communication with Arduino No1 error: 2020-03-14 18:49:35
 Communication with Arduino No1 error: 2020-03-14 18:49:39
+Communication with Arduino No1 error: 2020-03-15 10:41:35
+Communication with Arduino No1 error: 2020-03-15 11:30:38
+Communication with Arduino No1 error: 2020-03-16 12:37:03
+Communication with Arduino No1 error: 2020-03-16 13:50:39
+Temperature/Humidity sensor error: 2020-03-16 14:28:51
+Communication with Arduino No1 error: 2020-03-16 17:10:12
+Communication with Arduino No1 error: 2020-03-16 17:10:16
+Communication with Arduino No1 error: 2020-03-16 17:15:12
+Communication with Arduino No1 error: 2020-03-16 17:15:16
+Communication with Arduino No1 error: 2020-03-16 18:17:54
+Communication with Arduino No1 error: 2020-03-16 19:53:55
+Communication with Arduino No1 error: 2020-03-16 20:12:31
