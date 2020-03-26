@@ -158,19 +158,22 @@ namespace Home_automation
                 this.DragMove();
             }
         }
-
         private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
         {
             this.WindowState = WindowState.Minimized;
         }
     }
-
     public class DatabaseOperations
     {
+        public bool DatabaseIsInProccess;
+
         private static string _connectionStringRel = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10);
         private static string _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + _connectionStringRel + "TempHumDay.mdf;Integrated Security=True";
+        
         public void UpdateTempHumDbDayTable(DateTime time, float temp, float hum)
         {
+            DatabaseIsInProccess = true;
+
             CheckTempHumDayTable();
 
             Today thisDay = new Today();
@@ -181,8 +184,9 @@ namespace Home_automation
             DataContext db = new DataContext(_connectionString);
             db.GetTable<Today>().InsertOnSubmit(thisDay);
             db.SubmitChanges();
-        }
 
+            DatabaseIsInProccess = false;
+        }
         private void CheckTempHumDayTable()
         {
             DataContext db = new DataContext(_connectionString);
@@ -195,103 +199,18 @@ namespace Home_automation
                 {
                     //check last record, if its number exceeds limit(3 months) - save last to excel
                     DataTable tables = GetTableList();
+                    CheckIfNeedToFillExcel(tables);
 
-                    bool needToFillExcel = false;
-                    string firstSheetName = "";
-                    bool haveFirstSheetName = false;
-
-                    for (int i = 0; i < tables.Rows.Count; i++)
-                    {
-                        if (tables.Rows[i][2].ToString() != "Today")
-                        {
-                            if (DateTime.Now.Year == Convert.ToInt32(tables.Rows[i][2].ToString().Split('_')[1]))
-                            {
-                                if ((DateTime.Now.Month - Convert.ToInt32(tables.Rows[i][2].ToString().Split('_')[2])) >= 3)
-                                {
-                                    needToFillExcel = true;
-                                    if (!haveFirstSheetName)
-                                    {
-                                        firstSheetName = tables.Rows[i][2].ToString();
-                                        haveFirstSheetName = true;
-                                    }
-
-                                }
-                            }
-                            else
-                            {
-                                if ((Convert.ToInt32(tables.Rows[i][2].ToString().Split('_')[2]) - DateTime.Now.Month) <= 9)
-                                {
-                                    needToFillExcel = true;
-
-                                    if (!haveFirstSheetName)
-                                    {
-                                        firstSheetName = tables.Rows[i][2].ToString();
-                                        haveFirstSheetName = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (needToFillExcel)
-                    {
-                        FillExcel(firstSheetName);
-
-                        needToFillExcel = false;
-                        haveFirstSheetName = false;
-                        firstSheetName = "";
-                    }
-
-                    //create new day table
-
+                    //fill last day
                     string tableName = "Data_" + date.Year.ToString() + "_" + date.Month.ToString() + "_" + date.Day.ToString();
 
-                    using (SqlConnection con = new SqlConnection(_connectionString))
-                    {
-                        try
-                        {
-                            con.Open();
+                    //create new day table
+                    CreateDatabaseTable(tableName);
 
-                            var commandStr = "IF NOT EXISTS (select name from sysobjects where name = '" + tableName + "') CREATE TABLE[dbo].[" + tableName + "]" +
-                                "([Id] INT IDENTITY(1, 1) NOT NULL, " +
-                                "[Time] DATETIME NOT NULL, " +
-                                "[Temperature] FLOAT(53) NOT NULL, " +
-                                "[Humidity] FLOAT(53) NOT NULL, " +
-                                "PRIMARY KEY CLUSTERED([Id] ASC));";
+                    //fill
+                    FillTable(tableName, db);
 
-                            using (SqlCommand command = new SqlCommand(commandStr, con))
-                            {
-                                command.ExecuteNonQuery();
-                            }
-                            con.Close();
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(ex.Message);
-                        }
-                    }
-                    try
-                    {
-                        SqlConnection Con = new SqlConnection(_connectionString);
-
-                        foreach (var item in db.GetTable<Today>())
-                        {
-                            SqlCommand Cmd = new SqlCommand(
-                                "INSERT INTO " + tableName +
-                                "(Time, Temperature, Humidity) " +
-                                "VALUES('"
-                                + item.Time + "', "
-                                + item.Temperature.ToString().Replace(',', '.') + ", "
-                                + item.Humidity.ToString().Replace(',', '.') + ")", Con);
-
-                            Con.Open();
-                            Cmd.ExecuteNonQuery();
-                            Con.Close();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
-                    }
+                    //clear temp table (today)
                     foreach (var item in db.GetTable<Today>())
                     {
                         db.GetTable<Today>().DeleteOnSubmit(item);
@@ -300,6 +219,108 @@ namespace Home_automation
                 }
             }
         }
+        private void CheckIfNeedToFillExcel(DataTable tables)
+        {
+            bool needToFillExcel = false;
+            string firstSheetName = "";
+            bool haveFirstSheetName = false;
+
+            for (int i = 0; i < tables.Rows.Count; i++)
+            {
+                if (tables.Rows[i][2].ToString() != "Today")
+                {
+                    if (DateTime.Now.Year == Convert.ToInt32(tables.Rows[i][2].ToString().Split('_')[1]))
+                    {
+                        if ((DateTime.Now.Month - Convert.ToInt32(tables.Rows[i][2].ToString().Split('_')[2])) >= 3)
+                        {
+                            needToFillExcel = true;
+                            if (!haveFirstSheetName)
+                            {
+                                firstSheetName = tables.Rows[i][2].ToString();
+                                haveFirstSheetName = true;
+                            }
+
+                        }
+                    }
+                    else
+                    {
+                        if ((Convert.ToInt32(tables.Rows[i][2].ToString().Split('_')[2]) - DateTime.Now.Month) <= 9)
+                        {
+                            needToFillExcel = true;
+
+                            if (!haveFirstSheetName)
+                            {
+                                firstSheetName = tables.Rows[i][2].ToString();
+                                haveFirstSheetName = true;
+                            }
+                        }
+                    }
+                }
+            }
+            if (needToFillExcel)
+            {
+                FillExcel(firstSheetName);
+
+                needToFillExcel = false;
+                haveFirstSheetName = false;
+                firstSheetName = "";
+            }
+        }
+        private void CreateDatabaseTable(string tableName)
+        {
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                try
+                {
+                    con.Open();
+
+                    var commandStr = "IF NOT EXISTS (select name from sysobjects where name = '" + tableName + "') CREATE TABLE[dbo].[" + tableName + "]" +
+                        "([Id] INT IDENTITY(1, 1) NOT NULL, " +
+                        "[Time] DATETIME NOT NULL, " +
+                        "[Temperature] FLOAT(53) NOT NULL, " +
+                        "[Humidity] FLOAT(53) NOT NULL, " +
+                        "PRIMARY KEY CLUSTERED([Id] ASC));";
+
+                    using (SqlCommand command = new SqlCommand(commandStr, con))
+                    {
+                        command.ExecuteNonQuery();
+                    }
+                    con.Close();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+        private void FillTable(string tableName, DataContext db)
+        {
+            try
+            {
+                SqlConnection Con = new SqlConnection(_connectionString);
+
+                foreach (var item in db.GetTable<Today>())
+                {
+                    SqlCommand Cmd = new SqlCommand(
+                        "INSERT INTO " + tableName +
+                        "(Time, Temperature, Humidity) " +
+                        "VALUES('"
+                        + item.Time + "', "
+                        + item.Temperature.ToString().Replace(',', '.') + ", "
+                        + item.Humidity.ToString().Replace(',', '.') + ")", Con);
+
+                    Con.Open();
+                    Cmd.ExecuteNonQuery();
+                    Con.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        //just for testing: createtable(string name)
         public void createtable(string name)
         {
 
@@ -330,6 +351,8 @@ namespace Home_automation
         }
         public DataTable GetTableList()
         {
+            DatabaseIsInProccess = true;
+
             DataTable gg;
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
@@ -337,10 +360,15 @@ namespace Home_automation
                 gg = conn.GetSchema("Tables");
                 conn.Close();
             }
+
+            DatabaseIsInProccess = false;
+
             return gg;
         }
         public void FillExcel(string firstSheetName)
         {
+            DatabaseIsInProccess = true;
+
             string fileName = firstSheetName.Split('_')[0] + "_" + firstSheetName.Split('_')[1] + "_" + firstSheetName.Split('_')[2];
             string excelPath = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10) + @"TempHumData\" + fileName + ".xls";
 
@@ -362,6 +390,7 @@ namespace Home_automation
                 DataTable tables = GetTableList();
                 Dictionary<int, string> tableNamesDict = new Dictionary<int, string>();
 
+                //fill table names to dictionary
                 for (int i = 0; i < tables.Rows.Count; i++)
                 {
                     if (tables.Rows[i][2].ToString() != "Today")
@@ -379,7 +408,6 @@ namespace Home_automation
 
                 List<int> daysList = tableNamesDict.Keys.ToList();
                 daysList.Sort();
-
 
                 foreach (var day in daysList)
                 {
@@ -460,9 +488,12 @@ namespace Home_automation
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(xlApp);
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(xlWorkBook);
             }
+
+            DatabaseIsInProccess = false;
         }
         public void GetTableData(string tableName, ref List<DateTime> time, ref List<float> temp, ref List<float> hum)
         {
+            DatabaseIsInProccess = true;
 
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
@@ -488,9 +519,11 @@ namespace Home_automation
                     MessageBox.Show(ex.Message);
                 }
             }
+            DatabaseIsInProccess = false;
         }
         private void DeleteTable(string tableName)
         {
+            DatabaseIsInProccess = true;
 
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
@@ -511,9 +544,9 @@ namespace Home_automation
                     MessageBox.Show(ex.Message);
                 }
             }
+            DatabaseIsInProccess = false;
         }
     }
-
     public class Error
     {
         public event EventHandler ErrorStateChanged;
@@ -640,7 +673,10 @@ namespace Home_automation
                 {
                     if (_commErrorWatch.Elapsed.Seconds > timeoutSeconds)
                     {
-                        ArduinoErrors["ServerComErr"].IsActive = true;
+                        if (!ArduinoErrors["ServerComErr"].IsActive)
+                        {
+                            ArduinoErrors["ServerComErr"].IsActive = true;
+                        }
                     }
                 }
             });
@@ -675,7 +711,10 @@ namespace Home_automation
 
             if (bytesRead > 0)
             {
-                ArduinoErrors["ServerComErr"].IsActive = false;
+                if (ArduinoErrors["ServerComErr"].IsActive)
+                {
+                    ArduinoErrors["ServerComErr"].IsActive = false;
+                }
                 _commErrorWatch.Restart();
                 
                 // There  might be more data, so store the data received so far.  
@@ -701,7 +740,10 @@ namespace Home_automation
                             float.TryParse(content.Split('&')[1].Split('<')[0].Replace('.', ','), out hum))
                         {
                             ArduinoErrors["DHT_No1Err"].IsActive = false;
-                            UpdateTempHumDbDayTable(DateTime.Now, temp, hum);
+                            if (!DatabaseIsInProccess)
+                            {
+                                UpdateTempHumDbDayTable(DateTime.Now, temp, hum);
+                            }
                         }
                         else
                         {

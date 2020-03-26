@@ -37,4 +37,3 @@ C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Monitor.baml
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Errors.g.cs
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Errors.baml
-C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.csprojAssemblyReference.cache
