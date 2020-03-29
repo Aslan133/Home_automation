@@ -299,20 +299,32 @@ namespace Home_automation
             {
                 SqlConnection Con = new SqlConnection(_connectionString);
 
+                Dictionary<string, float[]> dataToWrite = new Dictionary<string, float[]>();
+
                 foreach (var item in db.GetTable<Today>())
+                {
+                    if (!dataToWrite.ContainsKey(item.Time.ToString()))
+                    {
+                        dataToWrite.Add(item.Time.ToString(), new float[2] { (float)item.Temperature, (float)item.Humidity });
+                    }
+                }
+
+
+                foreach (var item in dataToWrite)
                 {
                     SqlCommand Cmd = new SqlCommand(
                         "INSERT INTO " + tableName +
                         "(Time, Temperature, Humidity) " +
                         "VALUES('"
-                        + item.Time + "', "
-                        + item.Temperature.ToString().Replace(',', '.') + ", "
-                        + item.Humidity.ToString().Replace(',', '.') + ")", Con);
+                        + Convert.ToDateTime(item.Key) + "', "
+                        + item.Value[0].ToString().Replace(',', '.') + ", "
+                        + item.Value[1].ToString().Replace(',', '.') + ")", Con);
 
                     Con.Open();
                     Cmd.ExecuteNonQuery();
                     Con.Close();
                 }
+
             }
             catch (Exception ex)
             {

@@ -98,3 +98,8 @@ Communication with Arduino No1 error: 2020-03-25 10:12:08
 Communication with Arduino No1 error: 2020-03-25 13:12:23
 Communication with Arduino No1 error: 2020-03-25 14:26:43
 Communication with Arduino No1 error: 2020-03-26 06:25:32
+Communication with Arduino No1 error: 2020-03-27 14:56:55
+Communication with Arduino No1 error: 2020-03-27 15:47:36
+Communication with Arduino No1 error: 2020-03-28 18:40:40
+Communication with Arduino No1 error: 2020-03-28 20:28:45
+Communication with Arduino No1 error: 2020-03-28 20:30:22
