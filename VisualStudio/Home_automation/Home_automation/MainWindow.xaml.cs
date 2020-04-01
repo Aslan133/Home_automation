@@ -310,19 +310,25 @@ namespace Home_automation
                 }
 
 
-                foreach (var item in dataToWrite)
-                {
-                    SqlCommand Cmd = new SqlCommand(
-                        "INSERT INTO " + tableName +
-                        "(Time, Temperature, Humidity) " +
-                        "VALUES('"
-                        + Convert.ToDateTime(item.Key) + "', "
-                        + item.Value[0].ToString().Replace(',', '.') + ", "
-                        + item.Value[1].ToString().Replace(',', '.') + ")", Con);
 
-                    Con.Open();
-                    Cmd.ExecuteNonQuery();
-                    Con.Close();
+                using (SqlConnection con = new SqlConnection(_connectionString))
+                {
+                    using (SqlCommand cmd = new SqlCommand("Insert into " + tableName + " (Time, Temperature, Humidity) values (@Time, @Temperature, @Humidity)", con))
+                    {
+                        
+                        con.Open();
+
+                        foreach (var item in dataToWrite)
+                        {
+                            cmd.Parameters.Clear();
+                            cmd.Parameters.AddWithValue("@Time", Convert.ToDateTime(item.Key));
+                            cmd.Parameters.AddWithValue("@Temperature", item.Value[0].ToString().Replace(',', '.'));
+                            cmd.Parameters.AddWithValue("@Humidity", item.Value[1].ToString().Replace(',', '.'));
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        con.Close();
+                    }
                 }
 
             }
