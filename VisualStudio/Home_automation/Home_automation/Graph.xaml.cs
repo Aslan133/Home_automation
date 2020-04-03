@@ -23,11 +23,9 @@ namespace Home_automation
     /// </summary>
     public partial class Graph : Page
     {
-        private static string _connectionStringRel = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10);
-        private static string _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + _connectionStringRel + "TempHumDay.mdf;Integrated Security=True";
         private DatabaseOperations _database;
         private Dictionary<int, Dictionary<int, string>> _tableNamesDict;
-
+        
         public Graph()
         {
             InitializeComponent();
@@ -36,17 +34,19 @@ namespace Home_automation
         }
         private async void Graph_Loaded(object sender, RoutedEventArgs e)
         {
-
-            DataTable tables = await Task.Run(() =>
+            if (!DatabaseOperations.DatabaseError)
             {
-                return _database.GetTableList();
-            });
+                DataTable tables = await Task.Run(() =>
+                {
+                    return _database.GetTableList();
+                });
 
-            _tableNamesDict.Clear();
+                _tableNamesDict.Clear();
 
-            FillTablesNamesDictionary(tables);
+                FillTablesNamesDictionary(tables);
 
-            FillTablesNamesComboboxes();
+                FillTablesNamesComboboxes();
+            }
         }
         private void FillTablesNamesDictionary(DataTable tables)
         {
@@ -393,19 +393,40 @@ namespace Home_automation
             {
                 GraphDaysCbx.Visibility = Visibility.Collapsed;
 
-                await Task.Run(() =>
+                if (!DatabaseOperations.DatabaseError)
                 {
-                    Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                    await Task.Run(() =>
                     {
-                        DrawGraph(false, "");
-                    }));
-                });
+                        Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                        {
+                            DrawGraph(false, "");
+                        }));
+                    });
+                }
+                
 
             } else
             {
-                GraphDaysCbx.Visibility = Visibility.Visible;
+                if (!DatabaseOperations.DatabaseError)
+                {
+                    GraphDaysCbx.Visibility = Visibility.Visible;
+                    var nameParts3 = GraphDaysCbx.SelectedItem.ToString().Split('-');
+
+                    await Task.Run(() =>
+                    {
+                        Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                        {
+                            DrawGraph(true, _tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])]);
+                        }));
+                    });
+                }
+            }
+        }
+        private async void GraphDaysCbxSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!DatabaseOperations.DatabaseError)
+            {
                 var nameParts3 = GraphDaysCbx.SelectedItem.ToString().Split('-');
-                
                 await Task.Run(() =>
                 {
                     Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
@@ -413,19 +434,7 @@ namespace Home_automation
                         DrawGraph(true, _tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])]);
                     }));
                 });
-                
             }
-        }
-        private async void GraphDaysCbxSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            var nameParts3 = GraphDaysCbx.SelectedItem.ToString().Split('-');
-            await Task.Run(() =>
-            {
-                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
-                {
-                    DrawGraph(true, _tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])]);
-                }));
-            });
         }
     }
 }

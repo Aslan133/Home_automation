@@ -59,7 +59,7 @@ namespace Home_automation
             StartServer();
 
             //add event to every error
-            AddErrorCbxUpdateToErrorEvent(_arduinoAsyncSocketListener.ArduinoErrors);
+            AddErrorCbxUpdateToErrorEvent(_arduinoAsyncSocketListener.ArduinoErrors, _arduinoAsyncSocketListener.DatabaseErrors);
         }
         private async void StartServer()
         {
@@ -165,7 +165,9 @@ namespace Home_automation
     }
     public class DatabaseOperations
     {
-        public bool DatabaseIsInProccess;
+        public static bool DatabaseIsInProccess;
+        public static bool DatabaseError;
+        public static string DatabaseErrorMessage;
 
         private static string _connectionStringRel = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10);
         private static string _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + _connectionStringRel + "TempHumDay.mdf;Integrated Security=True";
@@ -174,16 +176,19 @@ namespace Home_automation
         {
             DatabaseIsInProccess = true;
 
-            CheckTempHumDayTable();
+            if (!DatabaseError)
+            {
+                CheckTempHumDayTable();
 
-            Today thisDay = new Today();
-            thisDay.Time = time;
-            thisDay.Temperature = temp;
-            thisDay.Humidity = hum;
+                Today thisDay = new Today();
+                thisDay.Time = time;
+                thisDay.Temperature = temp;
+                thisDay.Humidity = hum;
 
-            DataContext db = new DataContext(_connectionString);
-            db.GetTable<Today>().InsertOnSubmit(thisDay);
-            db.SubmitChanges();
+                DataContext db = new DataContext(_connectionString);
+                db.GetTable<Today>().InsertOnSubmit(thisDay);
+                db.SubmitChanges();
+            }
 
             DatabaseIsInProccess = false;
         }
@@ -208,14 +213,22 @@ namespace Home_automation
                     CreateDatabaseTable(tableName);
 
                     //fill
-                    FillTable(tableName, db);
+                    bool fillSuccessful = FillTable(tableName, db);
 
-                    //clear temp table (today)
-                    foreach (var item in db.GetTable<Today>())
+                    if (fillSuccessful)
                     {
-                        db.GetTable<Today>().DeleteOnSubmit(item);
+                        //clear temp table (today)
+                        foreach (var item in db.GetTable<Today>())
+                        {
+                            db.GetTable<Today>().DeleteOnSubmit(item);
+                        }
+                        db.SubmitChanges();
                     }
-                    db.SubmitChanges();
+                    else
+                    {
+                        DatabaseError = true;
+                    }
+                    
                 }
             }
         }
@@ -293,48 +306,29 @@ namespace Home_automation
                 }
             }
         }
-        private void FillTable(string tableName, DataContext db)
+        private bool FillTable(string tableName, DataContext db)
         {
             try
             {
-                SqlConnection Con = new SqlConnection(_connectionString);
-
-                Dictionary<string, float[]> dataToWrite = new Dictionary<string, float[]>();
-
-                foreach (var item in db.GetTable<Today>())
-                {
-                    if (!dataToWrite.ContainsKey(item.Time.ToString()))
-                    {
-                        dataToWrite.Add(item.Time.ToString(), new float[2] { (float)item.Temperature, (float)item.Humidity });
-                    }
-                }
-
-
-
                 using (SqlConnection con = new SqlConnection(_connectionString))
                 {
-                    using (SqlCommand cmd = new SqlCommand("Insert into " + tableName + " (Time, Temperature, Humidity) values (@Time, @Temperature, @Humidity)", con))
+                    using (SqlCommand cmd = new SqlCommand("Insert into " + tableName + " (Time, Temperature, Humidity) SELECT Time, Temperature, Humidity FROM Today", con))
                     {
                         
                         con.Open();
 
-                        foreach (var item in dataToWrite)
-                        {
-                            cmd.Parameters.Clear();
-                            cmd.Parameters.AddWithValue("@Time", Convert.ToDateTime(item.Key));
-                            cmd.Parameters.AddWithValue("@Temperature", item.Value[0].ToString().Replace(',', '.'));
-                            cmd.Parameters.AddWithValue("@Humidity", item.Value[1].ToString().Replace(',', '.'));
-                            cmd.ExecuteNonQuery();
-                        }
+                        cmd.ExecuteNonQuery();
 
                         con.Close();
                     }
                 }
-
+                return true;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
+                DatabaseErrorMessage = ex.Message;
+                return false;
             }
         }
 
@@ -619,6 +613,7 @@ namespace Home_automation
     internal class ArduinoAsynchronousSocketListener : DatabaseOperations
     {
         public Dictionary<string, Error> ArduinoErrors { get; set;}
+        public Dictionary<string, Error> DatabaseErrors { get; set; }
 
         private Label _tempLabel;
         private Label _humLabel;
@@ -637,6 +632,9 @@ namespace Home_automation
             ArduinoErrors = new Dictionary<string, Error>();
             ArduinoErrors.Add("ServerComErr", new Error("Communication with Arduino No1 error"));
             ArduinoErrors.Add("DHT_No1Err", new Error("Temperature/Humidity sensor error"));
+
+            DatabaseErrors = new Dictionary<string, Error>();
+            DatabaseErrors.Add("DatabaseErr", new Error("Database error"));
             #endregion
         }
 
@@ -760,7 +758,17 @@ namespace Home_automation
                             ArduinoErrors["DHT_No1Err"].IsActive = false;
                             if (!DatabaseIsInProccess)
                             {
-                                UpdateTempHumDbDayTable(DateTime.Now, temp, hum);
+                                if (!DatabaseErrors["DatabaseErr"].IsActive)
+                                {
+                                    if (!DatabaseError)
+                                    {
+                                        UpdateTempHumDbDayTable(DateTime.Now, temp, hum);
+                                    }
+                                    else
+                                    {
+                                        ArduinoErrors["DatabaseErr"].IsActive = true;
+                                    }
+                                }
                             }
                         }
                         else
