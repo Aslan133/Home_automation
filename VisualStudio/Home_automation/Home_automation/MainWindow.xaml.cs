@@ -52,8 +52,7 @@ namespace Home_automation
             MainNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 71, 178, 245));
             GraphNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
             ErrorsNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
-
-
+            
             //start TCP/IP server to and start getting temp - hum data
             _arduinoAsyncSocketListener = new ArduinoAsynchronousSocketListener(ref _monitor.TempLbl, ref _monitor.HumLbl);
             StartServer();
@@ -163,7 +162,7 @@ namespace Home_automation
             this.WindowState = WindowState.Minimized;
         }
     }
-    public class DatabaseOperations
+    public static class DatabaseOperations
     {
         public static bool DatabaseIsInProccess;
         public static bool DatabaseError;
@@ -172,27 +171,31 @@ namespace Home_automation
         private static string _connectionStringRel = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10);
         private static string _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + _connectionStringRel + "TempHumDay.mdf;Integrated Security=True";
         
-        public void UpdateTempHumDbDayTable(DateTime time, float temp, float hum)
+        public static void UpdateTempHumDbDayTable(DateTime time, float temp, float hum)
         {
-            DatabaseIsInProccess = true;
-
-            if (!DatabaseError)
+            
+            if (!DatabaseIsInProccess)
             {
-                CheckTempHumDayTable();
+                DatabaseIsInProccess = true;
 
-                Today thisDay = new Today();
-                thisDay.Time = time;
-                thisDay.Temperature = temp;
-                thisDay.Humidity = hum;
+                if (!DatabaseError)
+                {
+                    CheckTempHumDayTable();
 
-                DataContext db = new DataContext(_connectionString);
-                db.GetTable<Today>().InsertOnSubmit(thisDay);
-                db.SubmitChanges();
+                    Today thisDay = new Today();
+                    thisDay.Time = time;
+                    thisDay.Temperature = temp;
+                    thisDay.Humidity = hum;
+
+                    DataContext db = new DataContext(_connectionString);
+                    db.GetTable<Today>().InsertOnSubmit(thisDay);
+                    db.SubmitChanges();
+                }
             }
-
+            
             DatabaseIsInProccess = false;
         }
-        private void CheckTempHumDayTable()
+        private static void CheckTempHumDayTable()
         {
             DataContext db = new DataContext(_connectionString);
 
@@ -232,7 +235,7 @@ namespace Home_automation
                 }
             }
         }
-        private void CheckIfNeedToFillExcel(DataTable tables)
+        private static void CheckIfNeedToFillExcel(DataTable tables)
         {
             bool needToFillExcel = false;
             string firstSheetName = "";
@@ -279,7 +282,7 @@ namespace Home_automation
                 firstSheetName = "";
             }
         }
-        private void CreateDatabaseTable(string tableName)
+        private static void CreateDatabaseTable(string tableName)
         {
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
@@ -306,7 +309,7 @@ namespace Home_automation
                 }
             }
         }
-        private bool FillTable(string tableName, DataContext db)
+        private static bool FillTable(string tableName, DataContext db)
         {
             try
             {
@@ -333,7 +336,7 @@ namespace Home_automation
         }
 
         //just for testing: createtable(string name)
-        public void createtable(string name)
+        public static void createtable(string name)
         {
 
             using (SqlConnection con = new SqlConnection(_connectionString))
@@ -361,7 +364,7 @@ namespace Home_automation
                 }
             }
         }
-        public DataTable GetTableList()
+        public static DataTable GetTableList()
         {
             DatabaseIsInProccess = true;
 
@@ -377,7 +380,7 @@ namespace Home_automation
 
             return gg;
         }
-        public void FillExcel(string firstSheetName)
+        public static void FillExcel(string firstSheetName)
         {
             DatabaseIsInProccess = true;
 
@@ -503,7 +506,7 @@ namespace Home_automation
 
             DatabaseIsInProccess = false;
         }
-        public void GetTableData(string tableName, ref List<DateTime> time, ref List<float> temp, ref List<float> hum)
+        public static void GetTableData(string tableName, ref List<DateTime> time, ref List<float> temp, ref List<float> hum)
         {
             DatabaseIsInProccess = true;
 
@@ -533,7 +536,7 @@ namespace Home_automation
             }
             DatabaseIsInProccess = false;
         }
-        private void DeleteTable(string tableName)
+        private static void DeleteTable(string tableName)
         {
             DatabaseIsInProccess = true;
 
@@ -610,7 +613,7 @@ namespace Home_automation
         // Received data string.  
         public StringBuilder sb = new StringBuilder();
     }
-    internal class ArduinoAsynchronousSocketListener : DatabaseOperations
+    internal class ArduinoAsynchronousSocketListener
     {
         public Dictionary<string, Error> ArduinoErrors { get; set;}
         public Dictionary<string, Error> DatabaseErrors { get; set; }
@@ -756,13 +759,13 @@ namespace Home_automation
                             float.TryParse(content.Split('&')[1].Split('<')[0].Replace('.', ','), out hum))
                         {
                             ArduinoErrors["DHT_No1Err"].IsActive = false;
-                            if (!DatabaseIsInProccess)
+                            if (!DatabaseOperations.DatabaseIsInProccess)
                             {
                                 if (!DatabaseErrors["DatabaseErr"].IsActive)
                                 {
-                                    if (!DatabaseError)
+                                    if (!DatabaseOperations.DatabaseError)
                                     {
-                                        UpdateTempHumDbDayTable(DateTime.Now, temp, hum);
+                                        DatabaseOperations.UpdateTempHumDbDayTable(DateTime.Now, temp, hum);
                                     }
                                     else
                                     {

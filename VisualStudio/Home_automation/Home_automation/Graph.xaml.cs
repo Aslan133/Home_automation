@@ -23,13 +23,11 @@ namespace Home_automation
     /// </summary>
     public partial class Graph : Page
     {
-        private DatabaseOperations _database;
         private Dictionary<int, Dictionary<int, string>> _tableNamesDict;
         
         public Graph()
         {
             InitializeComponent();
-            _database = new DatabaseOperations();
             _tableNamesDict = new Dictionary<int, Dictionary<int, string>>();
         }
         private async void Graph_Loaded(object sender, RoutedEventArgs e)
@@ -38,7 +36,7 @@ namespace Home_automation
             {
                 DataTable tables = await Task.Run(() =>
                 {
-                    return _database.GetTableList();
+                    return DatabaseOperations.GetTableList();
                 });
 
                 _tableNamesDict.Clear();
@@ -136,7 +134,7 @@ namespace Home_automation
             List<float> temperatureList = new List<float>();
             List<float> humidityList = new List<float>();
 
-            _database.GetTableData(day, ref dateTimeList, ref temperatureList, ref humidityList);
+            DatabaseOperations.GetTableData(day, ref dateTimeList, ref temperatureList, ref humidityList);
 
             List<int> hours = new List<int>();
 
@@ -195,7 +193,7 @@ namespace Home_automation
                 List<float> temperatureList = new List<float>();
                 List<float> humidityList = new List<float>();
 
-                _database.GetTableData(_tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])], ref dateTimeList, ref temperatureList, ref humidityList);
+                DatabaseOperations.GetTableData(_tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])], ref dateTimeList, ref temperatureList, ref humidityList);
 
                 time.Add(dateTimeList.First());
                 temperature.Add(temperatureList.Average());
@@ -339,14 +337,22 @@ namespace Home_automation
 
             for (int i = 0; i < time.Count; i++)
             {
-                if(isDayGraph)
+                if (i > 0)
                 {
-                    points.Add(new Point((time[i].Hour - timeOriginHour) * stepHour + time[i].Minute * stepMinute + time[i].Second * stepSecond, ymax - data[i] * stepData));
+                    TimeSpan timeSpan = time[i] - time[i-1];
+                    if (timeSpan.TotalSeconds > 0 )
+                    {
+                        if (isDayGraph)
+                        {
+                            points.Add(new Point((time[i].Hour - timeOriginHour) * stepHour + time[i].Minute * stepMinute + time[i].Second * stepSecond, ymax - data[i] * stepData));
+                        }
+                        else
+                        {
+                            points.Add(new Point(Math.Ceiling((time[i] - originDay).TotalDays) * stepDay, ymax - data[i] * stepData));
+                        }
+                    }
                 }
-                else
-                {
-                    points.Add(new Point(Math.Ceiling((time[i] - originDay).TotalDays) * stepDay, ymax - data[i] * stepData));
-                }
+                
             }
 
             Polyline polyline = new Polyline();
