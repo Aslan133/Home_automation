@@ -205,10 +205,6 @@ namespace Home_automation
 
                 if (DateTime.Now.Day != date.Day)
                 {
-                    //check last record, if its number exceeds limit(3 months) - save last to excel
-                    DataTable tables = GetTableList();
-                    CheckIfNeedToFillExcel(tables);
-
                     //fill last day
                     string tableName = "Data_" + date.Year.ToString() + "_" + date.Month.ToString() + "_" + date.Day.ToString();
 
@@ -231,7 +227,11 @@ namespace Home_automation
                     {
                         DatabaseError = true;
                     }
-                    
+
+                    //check last record, if its number exceeds limit(3 months) - save last to excel
+                    DataTable tables = GetTableList();
+                    CheckIfNeedToFillExcel(tables);
+
                 }
             }
         }
@@ -366,7 +366,7 @@ namespace Home_automation
         }
         public static DataTable GetTableList()
         {
-            DatabaseIsInProccess = true;
+            //DatabaseIsInProccess = true;
 
             DataTable gg;
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -376,13 +376,13 @@ namespace Home_automation
                 conn.Close();
             }
 
-            DatabaseIsInProccess = false;
+            //DatabaseIsInProccess = false;
 
             return gg;
         }
         public static void FillExcel(string firstSheetName)
         {
-            DatabaseIsInProccess = true;
+            //DatabaseIsInProccess = true;
 
             string fileName = firstSheetName.Split('_')[0] + "_" + firstSheetName.Split('_')[1] + "_" + firstSheetName.Split('_')[2];
             string excelPath = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10) + @"TempHumData\" + fileName + ".xls";
@@ -504,11 +504,11 @@ namespace Home_automation
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(xlWorkBook);
             }
 
-            DatabaseIsInProccess = false;
+            //DatabaseIsInProccess = false;
         }
         public static void GetTableData(string tableName, ref List<DateTime> time, ref List<float> temp, ref List<float> hum)
         {
-            DatabaseIsInProccess = true;
+            //DatabaseIsInProccess = true;
 
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
@@ -534,11 +534,11 @@ namespace Home_automation
                     MessageBox.Show(ex.Message);
                 }
             }
-            DatabaseIsInProccess = false;
+            //DatabaseIsInProccess = false;
         }
         private static void DeleteTable(string tableName)
         {
-            DatabaseIsInProccess = true;
+            //DatabaseIsInProccess = true;
 
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
@@ -559,7 +559,7 @@ namespace Home_automation
                     MessageBox.Show(ex.Message);
                 }
             }
-            DatabaseIsInProccess = false;
+            //DatabaseIsInProccess = false;
         }
     }
     public class Error

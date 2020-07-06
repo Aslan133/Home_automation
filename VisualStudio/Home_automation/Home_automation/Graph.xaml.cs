@@ -32,18 +32,28 @@ namespace Home_automation
         }
         private async void Graph_Loaded(object sender, RoutedEventArgs e)
         {
+            DataTable tables = null;
+
             if (!DatabaseOperations.DatabaseError)
             {
-                DataTable tables = await Task.Run(() =>
+                if (!DatabaseOperations.DatabaseIsInProccess)
                 {
-                    return DatabaseOperations.GetTableList();
-                });
+                    DatabaseOperations.DatabaseIsInProccess = true;
 
-                _tableNamesDict.Clear();
+                    tables = await Task.Run(() =>
+                    {
+                        return DatabaseOperations.GetTableList();
+                    });
 
-                FillTablesNamesDictionary(tables);
+                    if (tables != null)
+                    {
+                        _tableNamesDict.Clear();
 
-                FillTablesNamesComboboxes();
+                        FillTablesNamesDictionary(tables);
+
+                        FillTablesNamesComboboxes();
+                    }
+                }
             }
         }
         private void FillTablesNamesDictionary(DataTable tables)
