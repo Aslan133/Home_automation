@@ -23,30 +23,38 @@ namespace Home_automation
     /// </summary>
     public partial class Graph : Page
     {
-        private static string _connectionStringRel = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10);
-        private static string _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + _connectionStringRel + "TempHumDay.mdf;Integrated Security=True";
-        private DatabaseOperations _database;
         private Dictionary<int, Dictionary<int, string>> _tableNamesDict;
-
+        
         public Graph()
         {
             InitializeComponent();
-            _database = new DatabaseOperations();
             _tableNamesDict = new Dictionary<int, Dictionary<int, string>>();
         }
         private async void Graph_Loaded(object sender, RoutedEventArgs e)
         {
+            DataTable tables = null;
 
-            DataTable tables = await Task.Run(() =>
+            if (!DatabaseOperations.DatabaseError)
             {
-                return _database.GetTableList();
-            });
+                if (!DatabaseOperations.DatabaseIsInProccess)
+                {
+                    DatabaseOperations.DatabaseIsInProccess = true;
 
-            _tableNamesDict.Clear();
+                    tables = await Task.Run(() =>
+                    {
+                        return DatabaseOperations.GetTableList();
+                    });
 
-            FillTablesNamesDictionary(tables);
+                    if (tables != null)
+                    {
+                        _tableNamesDict.Clear();
 
-            FillTablesNamesComboboxes();
+                        FillTablesNamesDictionary(tables);
+
+                        FillTablesNamesComboboxes();
+                    }
+                }
+            }
         }
         private void FillTablesNamesDictionary(DataTable tables)
         {
@@ -136,7 +144,7 @@ namespace Home_automation
             List<float> temperatureList = new List<float>();
             List<float> humidityList = new List<float>();
 
-            _database.GetTableData(day, ref dateTimeList, ref temperatureList, ref humidityList);
+            DatabaseOperations.GetTableData(day, ref dateTimeList, ref temperatureList, ref humidityList);
 
             List<int> hours = new List<int>();
 
@@ -195,7 +203,7 @@ namespace Home_automation
                 List<float> temperatureList = new List<float>();
                 List<float> humidityList = new List<float>();
 
-                _database.GetTableData(_tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])], ref dateTimeList, ref temperatureList, ref humidityList);
+                DatabaseOperations.GetTableData(_tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])], ref dateTimeList, ref temperatureList, ref humidityList);
 
                 time.Add(dateTimeList.First());
                 temperature.Add(temperatureList.Average());
@@ -339,14 +347,22 @@ namespace Home_automation
 
             for (int i = 0; i < time.Count; i++)
             {
-                if(isDayGraph)
+                if (i > 0)
                 {
-                    points.Add(new Point((time[i].Hour - timeOriginHour) * stepHour + time[i].Minute * stepMinute + time[i].Second * stepSecond, ymax - data[i] * stepData));
+                    TimeSpan timeSpan = time[i] - time[i-1];
+                    if (timeSpan.TotalSeconds > 0 )
+                    {
+                        if (isDayGraph)
+                        {
+                            points.Add(new Point((time[i].Hour - timeOriginHour) * stepHour + time[i].Minute * stepMinute + time[i].Second * stepSecond, ymax - data[i] * stepData));
+                        }
+                        else
+                        {
+                            points.Add(new Point(Math.Ceiling((time[i] - originDay).TotalDays) * stepDay, ymax - data[i] * stepData));
+                        }
+                    }
                 }
-                else
-                {
-                    points.Add(new Point(Math.Ceiling((time[i] - originDay).TotalDays) * stepDay, ymax - data[i] * stepData));
-                }
+                
             }
 
             Polyline polyline = new Polyline();
@@ -393,19 +409,40 @@ namespace Home_automation
             {
                 GraphDaysCbx.Visibility = Visibility.Collapsed;
 
-                await Task.Run(() =>
+                if (!DatabaseOperations.DatabaseError)
                 {
-                    Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                    await Task.Run(() =>
                     {
-                        DrawGraph(false, "");
-                    }));
-                });
+                        Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                        {
+                            DrawGraph(false, "");
+                        }));
+                    });
+                }
+                
 
             } else
             {
-                GraphDaysCbx.Visibility = Visibility.Visible;
+                if (!DatabaseOperations.DatabaseError)
+                {
+                    GraphDaysCbx.Visibility = Visibility.Visible;
+                    var nameParts3 = GraphDaysCbx.SelectedItem.ToString().Split('-');
+
+                    await Task.Run(() =>
+                    {
+                        Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                        {
+                            DrawGraph(true, _tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])]);
+                        }));
+                    });
+                }
+            }
+        }
+        private async void GraphDaysCbxSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!DatabaseOperations.DatabaseError)
+            {
                 var nameParts3 = GraphDaysCbx.SelectedItem.ToString().Split('-');
-                
                 await Task.Run(() =>
                 {
                     Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
@@ -413,19 +450,7 @@ namespace Home_automation
                         DrawGraph(true, _tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])]);
                     }));
                 });
-                
             }
-        }
-        private async void GraphDaysCbxSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            var nameParts3 = GraphDaysCbx.SelectedItem.ToString().Split('-');
-            await Task.Run(() =>
-            {
-                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
-                {
-                    DrawGraph(true, _tableNamesDict[Convert.ToInt32(nameParts3[0])][Convert.ToInt32(nameParts3[1])]);
-                }));
-            });
         }
     }
 }

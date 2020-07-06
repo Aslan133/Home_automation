@@ -11,29 +11,30 @@ C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_a
 C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.csproj.GenerateResource.cache
 C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.exe
 C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.pdb
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation_Content.g.cs
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\TempHumDay.mdf
+C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\TempHumDay_log.ldf
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\TempHumDay.mdf
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\TempHumDay_log.ldf
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\Home_automation.exe.config
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\Home_automation.exe
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\Home_automation.pdb
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.csproj.ResolveComReference.cache
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Errors.g.cs
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Graph.g.cs
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\MainWindow.g.cs
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Monitor.g.cs
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\App.g.cs
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation_Content.g.cs
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation_MarkupCompile.cache
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation_MarkupCompile.lref
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Errors.baml
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Graph.baml
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\MainWindow.baml
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Monitor.baml
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.g.resources
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.Properties.Resources.resources
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.csproj.GenerateResource.cache
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.exe
 C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.pdb
-C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation_Content.g.cs
-C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation_Content.g.cs
-C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\TempHumDay.mdf
-C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\TempHumDay_log.ldf
-C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\TempHumDay.mdf
-C:\Users\Ruslanas\Desktop\Asmeninis tobulejimas\Programavimas\C#\Projects\Home_automation\VisualStudio\Home_automation\Home_automation\bin\Debug\TempHumDay_log.ldf
-C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.csproj.ResolveComReference.cache
-C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Graph.g.cs
-C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Monitor.g.cs
-C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Graph.baml
-C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Monitor.baml
-C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Errors.g.cs
-C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Errors.baml
+C:\Users\Ruslanas\Documents\GitHub\Home_automation\VisualStudio\Home_automation\Home_automation\obj\Debug\Home_automation.csprojAssemblyReference.cache

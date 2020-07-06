@@ -52,14 +52,13 @@ namespace Home_automation
             MainNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 71, 178, 245));
             GraphNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
             ErrorsNavBtn.Background = new SolidColorBrush(Color.FromArgb(255, 152, 230, 253));
-
-
+            
             //start TCP/IP server to and start getting temp - hum data
             _arduinoAsyncSocketListener = new ArduinoAsynchronousSocketListener(ref _monitor.TempLbl, ref _monitor.HumLbl);
             StartServer();
 
             //add event to every error
-            AddErrorCbxUpdateToErrorEvent(_arduinoAsyncSocketListener.ArduinoErrors);
+            AddErrorCbxUpdateToErrorEvent(_arduinoAsyncSocketListener.ArduinoErrors, _arduinoAsyncSocketListener.DatabaseErrors);
         }
         private async void StartServer()
         {
@@ -163,31 +162,40 @@ namespace Home_automation
             this.WindowState = WindowState.Minimized;
         }
     }
-    public class DatabaseOperations
+    public static class DatabaseOperations
     {
-        public bool DatabaseIsInProccess;
+        public static bool DatabaseIsInProccess;
+        public static bool DatabaseError;
+        public static string DatabaseErrorMessage;
 
         private static string _connectionStringRel = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10);
         private static string _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + _connectionStringRel + "TempHumDay.mdf;Integrated Security=True";
         
-        public void UpdateTempHumDbDayTable(DateTime time, float temp, float hum)
+        public static void UpdateTempHumDbDayTable(DateTime time, float temp, float hum)
         {
-            DatabaseIsInProccess = true;
+            
+            if (!DatabaseIsInProccess)
+            {
+                DatabaseIsInProccess = true;
 
-            CheckTempHumDayTable();
+                if (!DatabaseError)
+                {
+                    CheckTempHumDayTable();
 
-            Today thisDay = new Today();
-            thisDay.Time = time;
-            thisDay.Temperature = temp;
-            thisDay.Humidity = hum;
+                    Today thisDay = new Today();
+                    thisDay.Time = time;
+                    thisDay.Temperature = temp;
+                    thisDay.Humidity = hum;
 
-            DataContext db = new DataContext(_connectionString);
-            db.GetTable<Today>().InsertOnSubmit(thisDay);
-            db.SubmitChanges();
-
+                    DataContext db = new DataContext(_connectionString);
+                    db.GetTable<Today>().InsertOnSubmit(thisDay);
+                    db.SubmitChanges();
+                }
+            }
+            
             DatabaseIsInProccess = false;
         }
-        private void CheckTempHumDayTable()
+        private static void CheckTempHumDayTable()
         {
             DataContext db = new DataContext(_connectionString);
 
@@ -197,10 +205,6 @@ namespace Home_automation
 
                 if (DateTime.Now.Day != date.Day)
                 {
-                    //check last record, if its number exceeds limit(3 months) - save last to excel
-                    DataTable tables = GetTableList();
-                    CheckIfNeedToFillExcel(tables);
-
                     //fill last day
                     string tableName = "Data_" + date.Year.ToString() + "_" + date.Month.ToString() + "_" + date.Day.ToString();
 
@@ -208,18 +212,30 @@ namespace Home_automation
                     CreateDatabaseTable(tableName);
 
                     //fill
-                    FillTable(tableName, db);
+                    bool fillSuccessful = FillTable(tableName, db);
 
-                    //clear temp table (today)
-                    foreach (var item in db.GetTable<Today>())
+                    if (fillSuccessful)
                     {
-                        db.GetTable<Today>().DeleteOnSubmit(item);
+                        //clear temp table (today)
+                        foreach (var item in db.GetTable<Today>())
+                        {
+                            db.GetTable<Today>().DeleteOnSubmit(item);
+                        }
+                        db.SubmitChanges();
                     }
-                    db.SubmitChanges();
+                    else
+                    {
+                        DatabaseError = true;
+                    }
+
+                    //check last record, if its number exceeds limit(3 months) - save last to excel
+                    DataTable tables = GetTableList();
+                    CheckIfNeedToFillExcel(tables);
+
                 }
             }
         }
-        private void CheckIfNeedToFillExcel(DataTable tables)
+        private static void CheckIfNeedToFillExcel(DataTable tables)
         {
             bool needToFillExcel = false;
             string firstSheetName = "";
@@ -266,7 +282,7 @@ namespace Home_automation
                 firstSheetName = "";
             }
         }
-        private void CreateDatabaseTable(string tableName)
+        private static void CreateDatabaseTable(string tableName)
         {
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
@@ -293,35 +309,34 @@ namespace Home_automation
                 }
             }
         }
-        private void FillTable(string tableName, DataContext db)
+        private static bool FillTable(string tableName, DataContext db)
         {
             try
             {
-                SqlConnection Con = new SqlConnection(_connectionString);
-
-                foreach (var item in db.GetTable<Today>())
+                using (SqlConnection con = new SqlConnection(_connectionString))
                 {
-                    SqlCommand Cmd = new SqlCommand(
-                        "INSERT INTO " + tableName +
-                        "(Time, Temperature, Humidity) " +
-                        "VALUES('"
-                        + item.Time + "', "
-                        + item.Temperature.ToString().Replace(',', '.') + ", "
-                        + item.Humidity.ToString().Replace(',', '.') + ")", Con);
+                    using (SqlCommand cmd = new SqlCommand("Insert into " + tableName + " (Time, Temperature, Humidity) SELECT Time, Temperature, Humidity FROM Today", con))
+                    {
+                        
+                        con.Open();
 
-                    Con.Open();
-                    Cmd.ExecuteNonQuery();
-                    Con.Close();
+                        cmd.ExecuteNonQuery();
+
+                        con.Close();
+                    }
                 }
+                return true;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
+                DatabaseErrorMessage = ex.Message;
+                return false;
             }
         }
 
         //just for testing: createtable(string name)
-        public void createtable(string name)
+        public static void createtable(string name)
         {
 
             using (SqlConnection con = new SqlConnection(_connectionString))
@@ -349,9 +364,9 @@ namespace Home_automation
                 }
             }
         }
-        public DataTable GetTableList()
+        public static DataTable GetTableList()
         {
-            DatabaseIsInProccess = true;
+            //DatabaseIsInProccess = true;
 
             DataTable gg;
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -361,13 +376,13 @@ namespace Home_automation
                 conn.Close();
             }
 
-            DatabaseIsInProccess = false;
+            //DatabaseIsInProccess = false;
 
             return gg;
         }
-        public void FillExcel(string firstSheetName)
+        public static void FillExcel(string firstSheetName)
         {
-            DatabaseIsInProccess = true;
+            //DatabaseIsInProccess = true;
 
             string fileName = firstSheetName.Split('_')[0] + "_" + firstSheetName.Split('_')[1] + "_" + firstSheetName.Split('_')[2];
             string excelPath = System.AppDomain.CurrentDomain.BaseDirectory.Remove(System.AppDomain.CurrentDomain.BaseDirectory.Length - 10) + @"TempHumData\" + fileName + ".xls";
@@ -489,11 +504,11 @@ namespace Home_automation
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(xlWorkBook);
             }
 
-            DatabaseIsInProccess = false;
+            //DatabaseIsInProccess = false;
         }
-        public void GetTableData(string tableName, ref List<DateTime> time, ref List<float> temp, ref List<float> hum)
+        public static void GetTableData(string tableName, ref List<DateTime> time, ref List<float> temp, ref List<float> hum)
         {
-            DatabaseIsInProccess = true;
+            //DatabaseIsInProccess = true;
 
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
@@ -519,11 +534,11 @@ namespace Home_automation
                     MessageBox.Show(ex.Message);
                 }
             }
-            DatabaseIsInProccess = false;
+            //DatabaseIsInProccess = false;
         }
-        private void DeleteTable(string tableName)
+        private static void DeleteTable(string tableName)
         {
-            DatabaseIsInProccess = true;
+            //DatabaseIsInProccess = true;
 
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
@@ -544,7 +559,7 @@ namespace Home_automation
                     MessageBox.Show(ex.Message);
                 }
             }
-            DatabaseIsInProccess = false;
+            //DatabaseIsInProccess = false;
         }
     }
     public class Error
@@ -598,9 +613,10 @@ namespace Home_automation
         // Received data string.  
         public StringBuilder sb = new StringBuilder();
     }
-    internal class ArduinoAsynchronousSocketListener : DatabaseOperations
+    internal class ArduinoAsynchronousSocketListener
     {
         public Dictionary<string, Error> ArduinoErrors { get; set;}
+        public Dictionary<string, Error> DatabaseErrors { get; set; }
 
         private Label _tempLabel;
         private Label _humLabel;
@@ -619,6 +635,9 @@ namespace Home_automation
             ArduinoErrors = new Dictionary<string, Error>();
             ArduinoErrors.Add("ServerComErr", new Error("Communication with Arduino No1 error"));
             ArduinoErrors.Add("DHT_No1Err", new Error("Temperature/Humidity sensor error"));
+
+            DatabaseErrors = new Dictionary<string, Error>();
+            DatabaseErrors.Add("DatabaseErr", new Error("Database error"));
             #endregion
         }
 
@@ -740,9 +759,19 @@ namespace Home_automation
                             float.TryParse(content.Split('&')[1].Split('<')[0].Replace('.', ','), out hum))
                         {
                             ArduinoErrors["DHT_No1Err"].IsActive = false;
-                            if (!DatabaseIsInProccess)
+                            if (!DatabaseOperations.DatabaseIsInProccess)
                             {
-                                UpdateTempHumDbDayTable(DateTime.Now, temp, hum);
+                                if (!DatabaseErrors["DatabaseErr"].IsActive)
+                                {
+                                    if (!DatabaseOperations.DatabaseError)
+                                    {
+                                        DatabaseOperations.UpdateTempHumDbDayTable(DateTime.Now, temp, hum);
+                                    }
+                                    else
+                                    {
+                                        ArduinoErrors["DatabaseErr"].IsActive = true;
+                                    }
+                                }
                             }
                         }
                         else
